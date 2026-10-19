@@ -1,8 +1,4 @@
--- =====================================================================
--- MapleHunt — initial schema (from Figure 3, ER diagram)
--- Postgres + PostGIS on Supabase. All geometry in WGS 84 (EPSG:4326).
--- PostGIS lives in the "extensions" schema, so spatial types are qualified.
--- =====================================================================
+-- MapleHunt — initial schema
 
 -- ---------- Enums ----------------------------------------------------
 create type public.species_t   as enum ('deer', 'moose', 'bear');
