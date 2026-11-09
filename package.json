@@ -1,10 +1,10 @@
 {
   "name": "maplehunt",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "MapleHunt: offline-first field companion for Ontario hunters",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck"
   },
   "keywords": [],
   "author": "",
@@ -19,6 +19,9 @@
   "packageManager": "pnpm@12.11.2",
   "type": "module",
   "devDependencies": {
-    "supabase": "^2.120.0"
-  }
+    "supabase": "^2.120.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  },
+  "private": true
 }
