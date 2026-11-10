@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Usage (from the repo root): bash pipeline/import_geohub.sh wmu|crown
+# Usage (from the repo root): bash pipeline/import_geohub.sh wmu|crown|acq
 # Needs GDAL, the shapefiles in pipeline/data/, and SUPABASE_DB_URL in .env.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -25,6 +25,16 @@ case "${1:-}" in
       -makevalid -overwrite -progress
     echo "Next: run pipeline/load_crown.sql in the Supabase SQL Editor."
     ;;
+  acq)
+    # Crown land the ministry bought later (may include Hyde Tract); the
+    # unpatented layer does not contain these.
+    ogr2ogr -f PostgreSQL "PG:$SUPABASE_DB_URL" \
+      "pipeline/data/acq/Crown_land%3A_ministry_acquisitions.shp" \
+      -nln staging.acq -lco GEOMETRY_NAME=geom -lco PRECISION=NO -nlt PROMOTE_TO_MULTI \
+      -spat -81.56 42.12 -77.84 44.82 -spat_srs EPSG:4326 -t_srs EPSG:4326 \
+      -makevalid -overwrite -progress
+    echo "Next: run pipeline/load_acq.sql in the Supabase SQL Editor."
+    ;;
   *)
-    echo "Usage: bash pipeline/import_geohub.sh wmu|crown"; exit 1 ;;
+    echo "Usage: bash pipeline/import_geohub.sh wmu|crown|acq"; exit 1 ;;
 esac

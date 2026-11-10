@@ -1,6 +1,7 @@
 begin;
 
-delete from public.land_areas where category = 'crown';
+delete from public.land_areas
+ where source like 'Ontario GeoHub: Crown Land - Ministry Unpatented Land%';
 
 insert into public.land_areas (category, hunting_status, geom, source)
 select 'crown',
@@ -15,4 +16,4 @@ select count(*) as crown_areas,
        count(*) filter (where not st_isvalid(geom)) as invalid,
        min(st_srid(geom)) as srid
 from public.land_areas
-where category = 'crown';
+where source like 'Ontario GeoHub: Crown Land - Ministry Unpatented Land%';
