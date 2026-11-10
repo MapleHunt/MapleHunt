@@ -122,3 +122,65 @@ body,
   color: var(--warn);
   box-shadow: 0 1px 4px rgb(0 0 0 / 0.2);
 }
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-button {
+  padding: 4px 10px;
+  border: 1px solid rgb(255 255 255 / 0.5);
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.sign-in form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.sign-in label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 600;
+}
+
+.sign-in input {
+  padding: 10px;
+  border: 1px solid #c9c4b4;
+  border-radius: 8px;
+  font: inherit;
+  font-weight: normal;
+}
+
+.sign-in button {
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background: var(--green);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+}
+
+.sign-in button.secondary {
+  border: 1px solid var(--green);
+  background: transparent;
+  color: var(--green);
+}
+
+.sign-in button:disabled {
+  opacity: 0.5;
+}
+
+.sign-in .form-note {
+  color: var(--warn);
+}

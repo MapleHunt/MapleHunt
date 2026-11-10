@@ -33,6 +33,13 @@ pmtiles extract https://build.protomaps.com/<date>.pmtiles apps/web/public/sampl
 
 Fonts and map icons are bundled in `public/basemaps-assets/` (from [protomaps/basemaps-assets](https://github.com/protomaps/basemaps-assets), Latin ranges only) so labels work offline.
 
+## Sign-in and local data
+
+- Email + password sign-in with Supabase (`src/auth/auth.ts`). Once signed in, the app stays signed in offline even after the access token expires; only **Sign out** or the server rejecting the refresh token logs out.
+- Hunt days, harvests and observations are stored on the phone with Dexie (`src/db/db.ts`). Types come from `@maplehunt/shared`.
+- Always write through `saveRecord` / `deleteRecord` (`src/db/records.ts`). They make the id on the phone, set `updated_at`, and add the record to the `outbox` table for the sync client (T19). Deletes are soft (`deleted_at`).
+- Locations use `toPointText({ lat, lon })` from `src/db/point.ts` (longitude first, as the sync API expects).
+
 ## Screens
 
 | Tab | Route | Tasks |

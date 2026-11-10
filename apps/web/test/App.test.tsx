@@ -1,9 +1,21 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { App } from "../src/App";
 
+const auth = vi.hoisted(() => ({ user: { id: "u1", email: "hunter@example.com" } as { id: string; email: string } | null }));
+
 vi.mock("../src/map/MapView", () => ({ MapView: () => null }));
+vi.mock("../src/auth/auth", () => ({
+  useAuthUser: () => auth.user,
+  signIn: vi.fn(),
+  signUp: vi.fn(),
+  signOut: vi.fn(),
+}));
+
+beforeEach(() => {
+  auth.user = { id: "u1", email: "hunter@example.com" };
+});
 
 function renderAt(path: string) {
   return render(
@@ -35,5 +47,14 @@ describe("App", () => {
   it("sends unknown paths back to the map", () => {
     renderAt("/does-not-exist");
     expect(screen.getByRole("heading", { name: "Map" })).toBeTruthy();
+  });
+});
+
+describe("App when signed out", () => {
+  it("shows sign-in instead of the tabs", () => {
+    auth.user = null;
+    renderAt("/map");
+    expect(screen.getByRole("heading", { name: "Sign in" })).toBeTruthy();
+    expect(screen.queryByRole("navigation", { name: "Main" })).toBeNull();
   });
 });
