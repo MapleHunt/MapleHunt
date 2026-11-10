@@ -26,8 +26,15 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
+        globPatterns: ["**/*.{js,mjs,css,html,svg,png,woff2,pbf,json}"],
         navigateFallback: "/index.html",
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.pathname.endsWith(".pmtiles"),
+            handler: "CacheFirst",
+            options: { cacheName: "map-packs", cacheableResponse: { statuses: [200] } },
+          },
+        ],
       },
     }),
   ],
