@@ -93,3 +93,32 @@ body,
   font-weight: 600;
   background: var(--green-light);
 }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.map-screen,
+.map-view,
+.map-container {
+  position: absolute;
+  inset: 0;
+}
+
+.map-message {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: 16px;
+  margin: 0;
+  padding: 12px;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--warn);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.2);
+}

@@ -1,7 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { App } from "../src/App";
+
+vi.mock("../src/map/MapView", () => ({ MapView: () => null }));
 
 function renderAt(path: string) {
   return render(
