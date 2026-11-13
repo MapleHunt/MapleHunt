@@ -274,6 +274,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          join_code: string
           mesh_channel: string | null
           name: string
           season_year: number
@@ -284,6 +285,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          join_code?: string
           mesh_channel?: string | null
           name: string
           season_year: number
@@ -294,6 +296,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          join_code?: string
           mesh_channel?: string | null
           name?: string
           season_year?: number
@@ -483,7 +486,35 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_party: {
+        Args: {
+          p_name: string
+          p_season_year: number
+          p_species: Database["public"]["Enums"]["species_t"]
+          p_wmu_code?: string
+        }
+        Returns: Database["public"]["Tables"]["parties"]["Row"]
+      }
       is_party_member: { Args: { p_party: string }; Returns: boolean }
+      join_party: { Args: { p_code: string }; Returns: string }
+      map_overlay: {
+        Args: { lat: number; lon: number; radius_km?: number }
+        Returns: Json
+      }
+      new_join_code: { Args: never; Returns: string }
+      rotate_join_code: { Args: { p_party: string }; Returns: string }
+      search_regs: {
+        Args: { max_results?: number; q: string }
+        Returns: {
+          body: string
+          id: number
+          page: number | null
+          rank: number
+          season_year: number
+          section: string | null
+          source_url: string | null
+        }[]
+      }
       shares_party_with: { Args: { p_profile: string }; Returns: boolean }
       sync_pull: { Args: { since?: string }; Returns: Json }
       sync_push: { Args: { payload: Json }; Returns: Json }

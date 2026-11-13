@@ -1,0 +1,53 @@
+/* Design tokens taken from the MapleHunt Figma file. */
+:root {
+  /* Greens */
+  --forest-950: #102c24; /* sidebar, status bar */
+  --forest-900: #183d32; /* headers, dark buttons, selected segments */
+  --forest-800: #2b4d42; /* desktop search field */
+  --forest-line: #355047;
+  --forest-border: #597166;
+  --ink: #182e26; /* body text */
+  --muted: #5a695e;
+  --header-sub: #c0d0bd;
+  --header-sub-2: #c8d6c8;
+  --sync-text: #dce8d6;
+
+  /* Surfaces */
+  --paper: #fffefa; /* cards, nav */
+  --canvas: #f3f0e8; /* page background */
+  --line: #d5dad0;
+  --line-strong: #a9b7a8;
+  --dashed: #aab7a5;
+  --segment-bg: #e7e9e0;
+  --interval-bg: #e1e6db;
+  --avatar-neutral: #e6e5da;
+  --table-head: #eaede4;
+  --history-bg: #ebede4;
+  --map-bg: #c8d4b4;
+
+  /* Accent */
+  --orange: #f07836; /* primary action */
+  --orange-soft: #ffe6d2;
+  --orange-line: #e7b896;
+  --rust: #963b16; /* active nav, links */
+
+  /* Status */
+  --ok: #286040;
+  --ok-soft: #e5ede0;
+  --danger: #a63827;
+  --danger-soft: #fbe6dd;
+  --danger-line: #e0ac98;
+  --warn: #80540a;
+  --warn-soft: #fbedcb;
+
+  --shadow: 0 3px 12px 0 rgba(24, 61, 50, 0.15);
+
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-lg: 12px;
+
+  --mobile-header: 74px;
+  --mobile-nav: 76px;
+  --sidebar: 224px;
+  --topbar: 76px;
+}

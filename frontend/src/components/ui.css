@@ -1,0 +1,284 @@
+/* ---------- Status badge ---------- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 7px;
+  border-radius: var(--radius);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.badge-ok {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+.badge-danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.badge-warn {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+
+/* ---------- Avatar ---------- */
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.avatar-dark {
+  background: var(--forest-900);
+  color: #fff;
+}
+.avatar-neutral {
+  background: var(--avatar-neutral);
+}
+.avatar-orange {
+  background: var(--orange-soft);
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-lg);
+  font-weight: 700;
+  font-size: 15px;
+  white-space: nowrap;
+}
+.btn-lg {
+  height: 48px;
+}
+.btn-md {
+  height: 44px;
+}
+.btn-desk {
+  height: 42px;
+  padding: 0 16px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.btn-block {
+  width: 100%;
+}
+.btn-primary {
+  background: var(--orange);
+  border-color: var(--orange);
+  color: var(--ink);
+}
+.btn-dark {
+  background: var(--forest-900);
+  border-color: var(--forest-900);
+  color: #fff;
+}
+.btn-outline {
+  background: var(--paper);
+  border-color: var(--line);
+  color: var(--ink);
+}
+.btn-soft {
+  background: var(--orange-soft);
+  border-color: var(--orange-line);
+  color: var(--rust);
+}
+.btn:active {
+  filter: brightness(0.95);
+}
+
+/* ---------- Segmented control ---------- */
+.segmented {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius);
+}
+.segmented-form {
+  height: 42px;
+  background: var(--segment-bg);
+}
+.segmented-interval {
+  height: 38px;
+  background: var(--interval-bg);
+}
+.segment {
+  flex: 1 0 0;
+  min-width: 0;
+  border-radius: var(--radius-sm);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+.segmented-interval .segment {
+  font-size: 12px;
+  font-weight: 600;
+}
+.segment-active {
+  background: var(--forest-900);
+  color: #fff;
+  font-weight: 700;
+}
+.segmented-interval .segment-active {
+  font-weight: 600;
+}
+
+/* ---------- Field ---------- */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.field-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.field-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 43px;
+  padding: 0 12px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.field-control input,
+.field-control select {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 500;
+  outline: none;
+  appearance: none;
+}
+
+/* Native date/time pickers: hide the browser's own icon but keep the whole field tappable. */
+.field-control:has(input[type="date"], input[type="time"]) {
+  position: relative;
+}
+.field-control input[type="date"]::-webkit-calendar-picker-indicator,
+.field-control input[type="time"]::-webkit-calendar-picker-indicator {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* ---------- Toast ---------- */
+.m-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  max-width: calc(100% - 32px);
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: var(--forest-900);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: var(--shadow);
+  z-index: 10;
+}
+.m-app .m-toast {
+  bottom: calc(var(--mobile-nav) + env(safe-area-inset-bottom) + 12px);
+}
+
+/* ---------- Toggle switch ---------- */
+.dm-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.dm-toggle {
+  appearance: none;
+  position: relative;
+  width: 30px;
+  height: 18px;
+  margin: 0;
+  border-radius: 99px;
+  background: #b9c2b4;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.dm-toggle::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 99px;
+  background: #fff;
+  transition: transform 0.15s;
+}
+
+.dm-toggle:checked {
+  background: var(--forest-900);
+}
+
+.dm-toggle:checked::after {
+  transform: translateX(12px);
+}
+
+/* ---------- Misc ---------- */
+.divider {
+  width: 100%;
+  height: 1px;
+  margin: 0;
+  border: none;
+  background: var(--line);
+  flex-shrink: 0;
+}
+
+.mobile-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--ok-soft);
+  color: var(--forest-900);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.mobile-note p {
+  flex: 1;
+}
+.mobile-note-compact {
+  align-items: flex-start;
+  gap: 8px;
+  padding: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+}
