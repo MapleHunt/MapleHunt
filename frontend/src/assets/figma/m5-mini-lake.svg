@@ -1,0 +1,9 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="100" height="81" viewBox="0 0 100 81" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Lake">
+<path d="M0 0H0.01V0.01H0V0ZM99.99 80.99H100V81H99.99V80.99ZM0 0H32C24 11.3333 23 21.3333 29 30C35 38.6667 30.6667 45.3333 16 50L0 53V0Z" fill="#A3C9CE"/>
+<mask id="stroke0_0_80" fill="white">
+<path d="M0 0H0.01V0.01H0V0ZM99.99 80.99H100V81H99.99V80.99ZM0 0H32C24 11.3333 23 21.3333 29 30C35 38.6667 30.6667 45.3333 16 50L0 53V0Z"/>
+</mask>
+<path d="M0 0H0.01V0.01H0V0ZM0 0H32C24 11.3333 23 21.3333 29 30C35 38.6667 30.6667 45.3333 16 50L0 53V0ZM99.99 80.99H100V81H99.99V80.99Z" stroke-width="2" stroke="#659AA2" mask="url(#stroke0_0_80)"/>
+</g>
+</svg>

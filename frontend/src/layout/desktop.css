@@ -1,0 +1,246 @@
+.d-app {
+  display: flex;
+  height: 100%;
+  background: var(--canvas);
+}
+
+/* ---------- Sidebar ---------- */
+.d-sidebar {
+  flex-shrink: 0;
+  width: var(--sidebar);
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  padding: 30px 16px 24px;
+  background: var(--forest-950);
+  overflow-y: auto;
+}
+
+.d-logo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding-left: 9px;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.d-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.d-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 46px;
+  padding: 0 13px;
+  border-radius: var(--radius);
+  color: var(--header-sub);
+  font-size: 14px;
+  line-height: 1.4;
+  text-decoration: none;
+}
+
+.d-nav-item:hover {
+  background: rgb(255 255 255 / 0.05);
+}
+
+.d-nav-item-active,
+.d-nav-item-active:hover {
+  background: var(--orange-soft);
+  color: var(--rust);
+  font-weight: 600;
+}
+
+.d-sidebar-spacer {
+  flex: 1;
+}
+
+.d-context {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--forest-line);
+  border-radius: var(--radius);
+  line-height: 1.4;
+}
+
+.d-context-kicker {
+  color: var(--header-sub);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.d-context-text {
+  color: #fff;
+  font-size: 13px;
+}
+
+.d-account {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+}
+
+.d-account-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.d-account-name {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.d-account-sub {
+  color: var(--header-sub);
+  font-size: 12px;
+}
+
+/* ---------- Workspace ---------- */
+.d-workspace {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.d-topbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  height: var(--topbar);
+  padding: 0 32px;
+  background: var(--forest-900);
+}
+
+.d-topbar-title {
+  width: 200px;
+  flex-shrink: 0;
+  color: #fff;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.d-search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 332px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: var(--radius);
+  background: var(--forest-800);
+}
+
+.d-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 13px;
+  outline: none;
+}
+
+.d-search input::placeholder {
+  color: var(--header-sub);
+}
+
+.d-sync {
+  flex: 1;
+  text-align: right;
+  color: var(--sync-text);
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.d-icon-button {
+  display: flex;
+}
+
+.d-season {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--forest-border);
+  border-radius: var(--radius);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.d-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* ---------- Shared page pieces ---------- */
+.d-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 32px;
+}
+
+.d-page-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.d-page-title {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.d-page-subtitle {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.d-card {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.d-card-title {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.d-row {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.d-small-muted {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}

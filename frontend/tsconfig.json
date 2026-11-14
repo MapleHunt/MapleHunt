@@ -1,0 +1,14 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "types": ["vite/client"],
+    "paths": {
+      "@maplehunt/shared": ["../packages/shared/src/index.ts"],
+      "@maplehunt/geo": ["../packages/geo/src/index.ts"],
+      "@turf/*": ["./node_modules/@turf/*"]
+    }
+  },
+  "include": ["src", "vite.config.ts"]
+}

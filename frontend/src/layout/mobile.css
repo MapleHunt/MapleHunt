@@ -1,0 +1,113 @@
+.m-app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--canvas);
+}
+
+/* Paints behind the phone's own status bar (notch / clock) in the installed app. */
+.m-safe-top {
+  flex-shrink: 0;
+  height: env(safe-area-inset-top);
+  background: var(--forest-950);
+}
+
+.m-main {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ---------- Bottom navigation ---------- */
+.m-nav {
+  flex-shrink: 0;
+  display: flex;
+  height: calc(var(--mobile-nav) + env(safe-area-inset-bottom));
+  padding: 7px 8px calc(5px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.m-tab {
+  flex: 1 0 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.m-tab-active {
+  color: var(--rust);
+  font-weight: 700;
+}
+
+.m-tab-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 32px;
+  border-radius: 99px;
+}
+
+.m-tab-active .m-tab-indicator {
+  background: var(--orange-soft);
+}
+
+/* ---------- Screen header ---------- */
+.m-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--mobile-header);
+  padding: 0 20px;
+  background: var(--forest-900);
+}
+
+.m-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.m-header-kicker {
+  color: var(--header-sub);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+}
+
+.m-header-title {
+  color: #fff;
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+}
+
+.m-header-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 44px;
+}
+
+/* Scrollable body under a header. */
+.m-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}

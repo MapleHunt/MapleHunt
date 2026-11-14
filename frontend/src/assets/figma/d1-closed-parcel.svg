@@ -1,0 +1,12 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="544" height="204" viewBox="0 0 544 204" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="Closed access parcel">
+<use xlink:href="#stroke0_0_146" fill="#D3C4AD"/>
+<mask id="stroke1_0_146" fill="white">
+<use xlink:href="#stroke0_0_146"/>
+</mask>
+<path d="M0 0H0.0125926V0.00284916H0V0ZM543.987 203.997H544V204H543.987V203.997ZM400.444 28.2067L516.296 19.9441V66.9553L459.63 71.229L405.481 58.9777L400.444 28.2067Z" stroke-width="2" stroke="#AE9A81" mask="url(#stroke1_0_146)"/>
+</g>
+<defs>
+<path id="stroke0_0_146" d="M0 0H0.0125926V0.00284916H0V0ZM543.987 203.997H544V204H543.987V203.997ZM400.444 28.2067L516.296 19.9441V66.9553L459.63 71.229L405.481 58.9777L400.444 28.2067Z"/>
+</defs>
+</svg>
