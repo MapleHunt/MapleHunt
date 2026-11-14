@@ -1,0 +1,78 @@
+.acct {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--paper);
+}
+
+.acct-who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.acct-name {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.acct-sub {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.acct-save {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: var(--radius);
+  background: var(--warn-soft);
+}
+
+.acct-save-title {
+  color: var(--warn);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.acct-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.acct-form input {
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+  font-size: 14px;
+  outline: none;
+}
+
+.acct-form input:focus {
+  border-color: var(--forest-900);
+}
+
+.acct-note {
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.acct-note-ok {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.acct-note-warn {
+  background: var(--warn-soft);
+  color: var(--warn);
+}

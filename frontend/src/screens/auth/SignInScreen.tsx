@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Button, Icon } from "../../components/ui";
-import { googleEnabled, signIn, signInWithGoogle, signUp } from "../../data/auth";
+import { googleEnabled, signIn, signInAsGuest, signInWithGoogle, signUp } from "../../data/auth";
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
 import { supabase } from "../../lib/supabase";
 import "./auth.css";
@@ -29,6 +29,18 @@ export function SignInScreen() {
       await signInWithGoogle(); // the page leaves for Google here
     } catch (err) {
       setMessage({ text: err instanceof Error ? err.message : String(err) });
+      setBusy(false);
+    }
+  }
+
+  async function handleGuest() {
+    setBusy(true);
+    setMessage(null);
+    try {
+      await signInAsGuest();
+    } catch (err) {
+      setMessage({ text: err instanceof Error ? err.message : String(err) });
+    } finally {
       setBusy(false);
     }
   }
@@ -117,6 +129,13 @@ export function SignInScreen() {
         <button type="button" className="auth-switch" onClick={() => setMode(mode === "signin" ? "signup" : "signin")}>
           {mode === "signin" ? "New here? Create an account" : "Already have an account? Sign in"}
         </button>
+        <div className="auth-or">
+          <span>or</span>
+        </div>
+        <button type="button" className="auth-guest" onClick={() => void handleGuest()} disabled={busy || !online || !supabase}>
+          Continue as guest
+        </button>
+        <p className="auth-guest-note">Try MapleHunt without an account. You can save it with Google or email later; guest data is lost if you sign out first.</p>
       </form>
     </div>
   );

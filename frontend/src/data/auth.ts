@@ -12,6 +12,8 @@ export interface AuthUser {
   id: string;
   email: string;
   name: string;
+  /** Guest (anonymous) account: data is lost on sign-out unless the account is saved. */
+  isGuest: boolean;
 }
 
 const STORAGE_KEY = "maplehunt.user";
@@ -20,7 +22,9 @@ function toUser(session: Session): AuthUser {
   // Email sign-up stores display_name; Google provides full_name / name.
   const meta = session.user.user_metadata as { display_name?: string; full_name?: string; name?: string } | undefined;
   const email = session.user.email ?? "";
-  return { id: session.user.id, email, name: meta?.display_name || meta?.full_name || meta?.name || email.split("@")[0] || "Hunter" };
+  const isGuest = session.user.is_anonymous === true;
+  const name = meta?.display_name || meta?.full_name || meta?.name || email.split("@")[0] || (isGuest ? "Guest" : "Hunter");
+  return { id: session.user.id, email, name, isGuest };
 }
 
 export function nextUser(current: AuthUser | null, event: AuthChangeEvent, session: Session | null): AuthUser | null {
@@ -32,7 +36,7 @@ export function nextUser(current: AuthUser | null, event: AuthChangeEvent, sessi
 function loadUser(): AuthUser | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as AuthUser) : null;
+    return raw ? ({ isGuest: false, ...JSON.parse(raw) } as AuthUser) : null;
   } catch {
     return null;
   }
@@ -42,7 +46,7 @@ let user = loadUser();
 const listeners = new Set<() => void>();
 
 function setUser(next: AuthUser | null) {
-  if (next?.id === user?.id && next?.email === user?.email && next?.name === user?.name) return;
+  if (next?.id === user?.id && next?.email === user?.email && next?.name === user?.name && next?.isGuest === user?.isGuest) return;
   const switched = user && next && user.id !== next.id;
   user = next;
   if (next) localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
@@ -94,6 +98,36 @@ export async function signInWithGoogle(): Promise<void> {
     provider: "google",
     options: { redirectTo: `${location.origin}${location.pathname}`, queryParams: { prompt: "select_account" } },
   });
+  if (error) throw error;
+}
+
+/** Guest sign-in (Supabase anonymous user). Records sync like any account. */
+export async function signInAsGuest(): Promise<void> {
+  const { error } = await requireSupabase().auth.signInAnonymously();
+  if (error) throw error;
+}
+
+/** Guest → permanent account by linking a Google login (keeps all records). */
+export async function saveGuestWithGoogle(): Promise<void> {
+  const { error } = await requireSupabase().auth.linkIdentity({
+    provider: "google",
+    options: { redirectTo: `${location.origin}${location.pathname}` },
+  });
+  if (error) throw error;
+}
+
+/** Guest → permanent account by adding an email. Supabase emails a confirmation link. */
+export async function saveGuestWithEmail(email: string, name: string): Promise<void> {
+  const client = requireSupabase();
+  const { data, error } = await client.auth.updateUser({ email, data: name.trim() ? { display_name: name.trim() } : undefined }, { emailRedirectTo: location.origin });
+  if (error) throw error;
+  // Show the name to party members right away (profiles: "update own profile").
+  if (name.trim() && data.user) await client.from("profiles").update({ display_name: name.trim() }).eq("id", data.user.id);
+}
+
+/** Set or change the password (e.g. after a guest confirmed their email, or for Google users). */
+export async function setPassword(password: string): Promise<void> {
+  const { error } = await requireSupabase().auth.updateUser({ password });
   if (error) throw error;
 }
 

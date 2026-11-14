@@ -1,16 +1,15 @@
 import { useLiveQuery } from "dexie-react-hooks";
-import { Avatar, Button, StatusBadge } from "../../components/ui";
-import { initials, signOut, useAuthUser } from "../../data/auth";
+import { Button, StatusBadge } from "../../components/ui";
 import { kvGet, kvSet } from "../../data/db";
 import { syncLabel, syncNow, useSyncStatus } from "../../data/sync";
 import { relativeTime } from "../../data/useRecords";
 import { PageHeading } from "../../layout/DesktopShell";
+import { AccountCard } from "../shared/AccountCard";
 import "./desktop-screens.css";
 
 // Not in Figma: account, sync status and sign-out.
 
 export function SettingsPage() {
-  const user = useAuthUser();
   const sync = useSyncStatus();
   const failed = useLiveQuery(async () => (await kvGet<Array<{ table: string; id: string; message: string }>>("syncFailed")) ?? [], [], []);
 
@@ -18,25 +17,9 @@ export function SettingsPage() {
     <div className="d-page">
       <PageHeading title="Settings" subtitle="Your account and how this device syncs." />
 
-      <section className="d-card d-list">
-        <div className="d-list-row">
-          <Avatar initials={initials(user?.name ?? "?")} tone="dark" size={40} />
-          <div style={{ flex: 1 }}>
-            <p className="d-list-title">{user?.name}</p>
-            <p className="d-small-muted">{user?.email}</p>
-          </div>
-          <Button
-            variant="outline"
-            size="desk"
-            onClick={() => {
-              if (sync.pending > 0 && !confirm(`${sync.pending} record(s) haven't synced yet and will be lost. Sign out anyway?`)) return;
-              void signOut();
-            }}
-          >
-            Sign out
-          </Button>
-        </div>
-      </section>
+      <div style={{ maxWidth: 520 }}>
+        <AccountCard />
+      </div>
 
       <section className="d-card d-list">
         <div className="d-list-row">

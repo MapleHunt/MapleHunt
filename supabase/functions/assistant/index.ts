@@ -89,27 +89,38 @@ ${context}
 
 Question: ${question}`;
 
-    // Try the configured model, then a lighter fallback; retry briefly when Gemini is overloaded.
+    // Try the configured model, then fallbacks; retry briefly when Gemini is overloaded.
+    // Each call is capped at 15 s so the function always answers.
     const models = [...new Set([model, "gemini-flash-latest", "gemini-3.8-flash", "gemini-3.5-flash", "gemini-2.5-flash", "gemini-flash-lite-latest"])];
+    const tried: string[] = [];
     let res: Response | null = null;
     outer: for (const m of models) {
       for (let attempt = 0; attempt < 2; attempt++) {
-        res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-          body: JSON.stringify({
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
-            generationConfig: { temperature: 0.2, responseMimeType: "application/json" },
-          }),
-        });
+        try {
+          res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+            body: JSON.stringify({
+              contents: [{ role: "user", parts: [{ text: prompt }] }],
+              generationConfig: { temperature: 0.2, responseMimeType: "application/json" },
+            }),
+            signal: AbortSignal.timeout(15_000),
+          });
+        } catch (err) {
+          tried.push(`${m}: ${err instanceof Error ? err.name : "failed"}`);
+          res = null;
+          break; // timeout / network: next model
+        }
         if (res.ok) break outer;
+        tried.push(`${m}: ${res.status} ${(await res.clone().text()).slice(0, 120).replace(/\s+/g, " ")}`);
         if (res.status !== 429 && res.status !== 503) break; // not a load problem: try the next model
         await new Promise((r) => setTimeout(r, 1200 * (attempt + 1)));
       }
     }
     if (!res || !res.ok) {
-      const detail = res ? `${res.status} ${(await res.text()).slice(0, 300)}` : "no response";
-      return json({ error: res && (res.status === 503 || res.status === 429) ? "The assistant is busy right now. Try again in a minute." : `Gemini error: ${detail}` }, 502);
+      console.error("Gemini failed", tried);
+      const busy = tried.length > 0 && tried.every((t) => / (429|503) /.test(t));
+      return json({ error: busy ? "The assistant is busy right now. Try again in a minute." : `Gemini error — ${tried.join(" | ")}` }, 502);
     }
     const out = await res.json();
     const text: string = out?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? "").join("") ?? "";

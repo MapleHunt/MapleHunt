@@ -1,17 +1,16 @@
 import { Link, useNavigate } from "react-router";
-import { Avatar, Button, StatusBadge } from "../../components/ui";
-import { initials, signOut, useAuthUser } from "../../data/auth";
+import { Button, StatusBadge } from "../../components/ui";
 import { deleteRecord } from "../../data/records";
 import { syncLabel, syncNow, useSyncStatus } from "../../data/sync";
 import { formatDate, formatTime, maskTag, speciesLabel, useHarvests, useHuntDays } from "../../data/useRecords";
 import { MobileHeader } from "../../layout/MobileShell";
 import { useSavedAreas } from "../../map/offlineArea";
+import { AccountCard } from "../shared/AccountCard";
 import "./mobile-screens.css";
 
 // The "More" tab has no Figma frame yet: account, my harvests, sync and offline maps.
 
 export function MoreScreen() {
-  const user = useAuthUser();
   const navigate = useNavigate();
   const sync = useSyncStatus();
   const harvests = useHarvests();
@@ -22,13 +21,7 @@ export function MoreScreen() {
     <>
       <MobileHeader kicker="MAPLEHUNT" title="More" />
       <div className="m-body mm">
-        <div className="mm-account">
-          <Avatar initials={initials(user?.name ?? "?")} tone="dark" size={40} />
-          <div>
-            <p className="mm-name">{user?.name}</p>
-            <p className="mm-sub">{user?.email}</p>
-          </div>
-        </div>
+        <AccountCard />
 
         <div className="mm-section">
           <div className="mm-section-head">
@@ -98,18 +91,7 @@ export function MoreScreen() {
         <Link to="/party/invite" className="mm-item">
           Party invite <span aria-hidden>›</span>
         </Link>
-        <Button
-          variant="outline"
-          size="md"
-          block
-          onClick={() => {
-            if (sync.pending > 0 && !confirm(`${sync.pending} record(s) haven't synced yet and will be lost. Sign out anyway?`)) return;
-            void signOut();
-          }}
-        >
-          Sign out
-        </Button>
-        <p className="mm-note">Signing out removes your records from this phone. Sync first if anything is waiting.</p>
+
       </div>
     </>
   );

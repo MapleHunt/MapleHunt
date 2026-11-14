@@ -147,3 +147,25 @@
   height: 1px;
   background: var(--line);
 }
+
+.auth-guest {
+  height: 46px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-lg);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.auth-guest:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.auth-guest-note {
+  margin-top: -6px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
+}
