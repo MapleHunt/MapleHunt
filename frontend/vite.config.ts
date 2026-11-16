@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
@@ -62,4 +63,10 @@ export default defineConfig({
       },
     }),
   ],
+  test: {
+    environment: "jsdom",
+    setupFiles: ["./test/setup.ts"],
+    // Tests must never reach the real Supabase project from frontend/.env.
+    env: { VITE_SUPABASE_URL: "", VITE_SUPABASE_ANON_KEY: "", VITE_PROTOMAPS_KEY: "test-key", VITE_MAP_PACK_URL: "" },
+  },
 });

@@ -23,6 +23,26 @@ pnpm --filter @maplehunt/frontend dev         # http://localhost:5173
 
 Under 1024 px wide you get the phone layout; from 1024 px the desktop planner.
 
+## Tests
+
+```bash
+pnpm --filter @maplehunt/frontend test
+```
+
+Vitest + jsdom + Testing Library, with `fake-indexeddb` for Dexie. Tests cover the sync client, records and outbox, sign-in state, map style, offline tile list, hunts, labels, and an App smoke test. MapLibre needs WebGL, so map rendering is mocked. The test config blanks the Supabase keys, so tests never touch the real project.
+
+## Testing on an Android phone
+
+Plug the phone in with USB debugging on, open `chrome://inspect/#devices` on the PC, forward port `5173` to `localhost:5173`, and open `localhost:5173` in Chrome on the phone. Use `localhost` rather than the PC's Wi-Fi address: Chrome only allows GPS, the service worker and Web Bluetooth on a secure origin. For the offline check, forward `4173` and use `build` + `preview`.
+
+## Map pack for development
+
+To try the offline map pack path, make a small sample with the [pmtiles CLI](https://github.com/protomaps/go-pmtiles), put it in `frontend/public/` (`*.pmtiles` is gitignored) and set `VITE_MAP_PACK_URL=/sample.pmtiles`:
+
+```bash
+pmtiles extract https://build.protomaps.com/<date>.pmtiles frontend/public/sample.pmtiles --bbox=<minLon,minLat,maxLon,maxLat> --maxzoom=14
+```
+
 ## One-time backend setup (Supabase)
 
 Run from the repo root with the Supabase CLI (`pnpm exec supabase …`). You need to be a member of the Supabase project.
