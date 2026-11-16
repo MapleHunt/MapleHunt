@@ -3,3 +3,6 @@ packages:
   - 'frontend'
 allowBuilds:
   esbuild: true
+  # Their only script is a "use pnpm" check; the packages ship prebuilt.
+  '@meshtastic/core': false
+  '@meshtastic/transport-web-bluetooth': false
