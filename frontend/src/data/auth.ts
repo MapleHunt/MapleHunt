@@ -3,8 +3,8 @@ import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { requireSupabase, supabase } from "../lib/supabase";
 import { clearLocalData } from "./db";
 
-// Based on apps/web/src/auth/auth.ts: once signed in, the app stays signed in
-// offline even after the access token expires. Only Sign out (or the server
+// Once signed in, the app stays signed in offline even after the access token
+// expires. Only Sign out (or the server
 // rejecting the refresh token) logs out. Signing out also wipes this phone's
 // local records, so the next person can't see or sync them.
 

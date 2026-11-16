@@ -2,7 +2,7 @@ import Dexie from "dexie";
 import type { EntityTable, Table } from "dexie";
 import type { Tables } from "@maplehunt/shared";
 
-// Same local schema as apps/web/src/db/db.ts, plus a key–value cache and photo blobs.
+// Synced tables mirror the server, plus a key–value cache and photo blobs.
 
 // user_id and server_updated_at are set by the server, so the phone never stores them.
 type Local<T> = Omit<T, "user_id" | "server_updated_at">;

@@ -2,8 +2,8 @@ import { db } from "./db";
 import type { MapleHuntDb, SyncRecords, SyncTable } from "./db";
 import { requestSync } from "./sync";
 
-// Same write path as apps/web/src/db/records.ts: the phone makes the id, sets
-// updated_at, and queues the record in the outbox for sync. Deletes are soft.
+// Every write goes through here: the phone makes the id, sets updated_at, and
+// queues the record in the outbox for sync. Deletes are soft.
 
 export type NewRecord<T extends SyncTable> = Omit<SyncRecords[T], "id" | "updated_at" | "deleted_at"> & { id?: string };
 
