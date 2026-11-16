@@ -23,3 +23,16 @@ export {
   type Scheduler,
   type BroadcasterOptions,
 } from "./PositionBroadcaster";
+export {
+  MeshtasticRadio,
+  PRIVATE_APP_PORT,
+  nodeIdFromNum,
+  type MeshLink,
+  type MeshPacketIn,
+  type LinkOpener,
+  type MeshtasticRadioOptions,
+  type WakeLockLike,
+  type Timers,
+} from "./MeshtasticRadio";
+export { ScreenWakeLock, type WakeLockEnvironment } from "./ScreenWakeLock";
+export { webBluetoothOpener, isWebBluetoothAvailable } from "./webBluetoothLink";

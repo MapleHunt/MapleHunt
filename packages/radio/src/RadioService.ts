@@ -4,7 +4,7 @@
  * Two implementations:
  * - `MockRadio` (this package): an in-memory mesh, so every screen can be
  *   built and tested before the Heltec V3 radios are set up.
- * - `MeshtasticRadio` (next step): Web Bluetooth + Meshtastic JS to a real
+ * - `MeshtasticRadio`: Web Bluetooth + `@meshtastic/core` to a real
  *   Heltec WiFi LoRa 32 V3 on 915 MHz. Android + Chrome only.
  *
  * Design decision: the app sends positions itself instead of using the

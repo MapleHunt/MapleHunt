@@ -15,7 +15,12 @@
   },
   "devDependencies": {
     "@maplehunt/geo": "workspace:*",
+    "@types/web-bluetooth": "^0.0.20",
     "typescript": "^5.9.0",
     "vitest": "^3.2.0"
+  },
+  "dependencies": {
+    "@meshtastic/core": "2.6.7",
+    "@meshtastic/transport-web-bluetooth": "0.1.5"
   }
 }
