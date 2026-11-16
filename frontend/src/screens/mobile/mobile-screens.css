@@ -366,6 +366,54 @@
   font-size: 11px;
 }
 
+.mp-radio-node {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--header-sub-2);
+}
+
+.mp-radio-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.mp-radio-actions .btn {
+  flex: 1;
+}
+
+.mp-radio .mp-radio-disconnect {
+  border-color: var(--header-sub-2);
+  background: transparent;
+  color: #fff;
+}
+
+.mp-radio-error {
+  margin: 0;
+  color: var(--orange-soft);
+  font-size: 12px;
+}
+
+.mp-radio-heard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 8px 0 0;
+  border-top: 1px solid rgb(255 255 255 / 0.15);
+  list-style: none;
+  font-size: 12px;
+}
+
+.mp-radio-heard li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mp-radio-heard li span:first-child {
+  font-family: ui-monospace, monospace;
+}
+
 .mp-summary {
   display: flex;
   flex-direction: column;

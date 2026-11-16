@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router";
-import { Avatar, Button, Icon, Segmented, TagHolderBadge } from "../../components/ui";
+import { Avatar, Button, Segmented, TagHolderBadge } from "../../components/ui";
 import { useToast } from "../../components/useToast";
 import { initials, useAuthUser } from "../../data/auth";
 import { leaveParty, refreshParty, useParty } from "../../data/party";
@@ -8,10 +8,11 @@ import { MobileHeader } from "../../layout/MobileShell";
 import { useAppState } from "../../state/AppState";
 import type { ShareInterval } from "../../state/AppState";
 import { PartySetup, formatJoined, memberTone } from "../shared/party";
+import { RadioCard } from "./RadioCard";
 import "./mobile-screens.css";
 
-// Figma "03 Party & Radio" with the real party. Radio parts stay off until the
-// LoRa radio is connected.
+// Figma "03 Party & Radio" with the real party. Quick messages stay off until
+// they're sent over the radio (S2).
 
 const quickMessages = [
   { text: "Deer down", icon: "m3-flag.svg", variant: "outline" as const },
@@ -33,7 +34,10 @@ export function PartyScreen() {
     return (
       <>
         <MobileHeader kicker="MAPLEHUNT / FIELD NETWORK" title="Party & radio" />
-        <div className="m-body mp">{loading ? <p className="mp-sub">Loading your party…</p> : <PartySetup />}</div>
+        <div className="m-body mp">
+          <RadioCard />
+          {loading ? <p className="mp-sub">Loading your party…</p> : <PartySetup />}
+        </div>
       </>
     );
   }
@@ -53,17 +57,7 @@ export function PartyScreen() {
         }}
       />
       <div className="m-body mp">
-        <div className="mp-radio">
-          <div className="ms-row">
-            <span className="mp-radio-status">
-              <Icon name="m3-radio-white.svg" size={18} />
-              Radio not paired
-            </span>
-          </div>
-          <div className="mp-radio-ids">
-            <span>Live positions and 5 km alerts arrive with the LoRa radio.</span>
-          </div>
-        </div>
+        <RadioCard />
 
         <div className="mp-summary">
           <div className="ms-row">

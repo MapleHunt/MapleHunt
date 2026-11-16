@@ -1,17 +1,23 @@
 /// <reference types="vitest/config" />
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
-const here = (path: string) => decodeURIComponent(new URL(path, import.meta.url).pathname);
+const here = (path: string) => fileURLToPath(new URL(path, import.meta.url));
 
 export default defineConfig({
   resolve: {
     // Team packages are used straight from source (same as pnpm's workspace link).
-    alias: {
-      "@maplehunt/shared": here("../packages/shared/src/index.ts"),
-      "@maplehunt/geo": here("../packages/geo/src/index.ts"),
-    },
+    alias: [
+      { find: "@maplehunt/shared", replacement: here("../packages/shared/src/index.ts") },
+      { find: "@maplehunt/geo", replacement: here("../packages/geo/src/index.ts") },
+      { find: "@maplehunt/radio", replacement: here("../packages/radio/src/index.ts") },
+      // @meshtastic/core imports these Node modules; see packages/radio/browser-shims.
+      { find: /^os$/, replacement: here("../packages/radio/browser-shims/os.ts") },
+      { find: /^path$/, replacement: here("../packages/radio/browser-shims/path.ts") },
+      { find: /^util$/, replacement: here("../packages/radio/browser-shims/util.ts") },
+    ],
     // @maplehunt/geo imports Turf; resolve it from this app's node_modules.
     dedupe: ["@turf/boolean-point-in-polygon", "@turf/distance"],
   },
