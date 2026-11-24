@@ -1,8 +1,11 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { Avatar, Button, Segmented, TagHolderBadge } from "../../components/ui";
 import { useToast } from "../../components/useToast";
 import { initials, useAuthUser } from "../../data/auth";
 import { leaveParty, refreshParty, useParty } from "../../data/party";
+import { radioLine, usePartyRange } from "../../data/partyRange";
+import type { TrackedMember } from "../../data/partyRange";
 import { speciesLabel } from "../../data/useRecords";
 import { MobileHeader } from "../../layout/MobileShell";
 import { useAppState } from "../../state/AppState";
@@ -23,12 +26,23 @@ const quickMessages = [
 
 const intervals: readonly ShareInterval[] = ["30 s", "60 s", "120 s"];
 
+function MemberRadio({ tracked, now }: { tracked: TrackedMember | undefined; now: number }) {
+  const warn = tracked?.status === "too_far" || tracked?.status === "lost";
+  return <p className={`mp-member-radio${warn ? " mp-member-radio-warn" : ""}`}>{radioLine(tracked, now)}</p>;
+}
+
 export function PartyScreen() {
   const navigate = useNavigate();
   const user = useAuthUser();
   const { party, loading } = useParty();
   const { shareInterval, setShareInterval } = useAppState();
   const { show, toast } = useToast();
+  const range = usePartyRange();
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 5_000);
+    return () => clearInterval(id);
+  }, []);
 
   if (!party) {
     return (
@@ -71,6 +85,7 @@ export function PartyScreen() {
             {party.wmuCode ? ` · WMU ${party.wmuCode}` : ""} · {party.seasonYear} season
           </p>
           <p className="mp-tagholder">Tag holder: {tagHolder?.name ?? "—"}</p>
+          {range.notTracking && <p className="mp-sub">{range.notTracking}</p>}
         </div>
 
         <ul className="mp-members" style={{ listStyle: "none", margin: 0, padding: 0 }}>
@@ -88,6 +103,9 @@ export function PartyScreen() {
                 <p className="mp-member-sub">
                   {m.role === "tag_holder" ? "Tag holder" : "Member"} · joined {formatJoined(m.joinedAt)}
                 </p>
+                {!range.notTracking && (
+                  <MemberRadio tracked={range.members.find((t) => (m.profileId === user?.id ? t.isYou : t.nodeId === m.meshNodeId))} now={now} />
+                )}
               </div>
             </li>
           ))}

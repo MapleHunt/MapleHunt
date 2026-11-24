@@ -6,18 +6,19 @@ import { initials, useAuthUser } from "../../data/auth";
 import { DEFAULT_CENTER, placeLine, useGeo } from "../../data/geo";
 import { endHunt, formatDuration, startHunt, useActiveHunt } from "../../data/hunt";
 import { useParty } from "../../data/party";
+import { memberProblemText, usePartyRange } from "../../data/partyRange";
 import { connectionLabel, useRadio } from "../../data/radio";
 import { parsePointText } from "../../data/records";
 import { syncLabel, useSyncStatus } from "../../data/sync";
 import { speciesLabel, useHarvests, useObservations } from "../../data/useRecords";
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
 import { RealMap } from "../../map/RealMap";
-import type { MapHandle, MapPin } from "../../map/RealMap";
+import type { MapHandle, MapMember, MapPin } from "../../map/RealMap";
 import { saveAreaOffline } from "../../map/offlineArea";
 import "./mobile-screens.css";
 
-// Figma "01 Map" / "02 Map – Alert", on the real map. Party member markers and
-// radio alerts are left out until the radio is connected.
+// Figma "01 Map" / "02 Map – Alert", on the real map. Party members and the
+// 5 km alert come from the party radio (data/partyRange).
 
 function useNow(active: boolean) {
   const [now, setNow] = useState(() => Date.now());
@@ -33,13 +34,14 @@ export function MapScreen() {
   const user = useAuthUser();
   const { position, positionError, overlay, here, crossing } = useGeo();
   const radio = useRadio();
+  const range = usePartyRange();
   const { party } = useParty();
   const hunt = useActiveHunt();
   const online = useOnlineStatus();
   const sync = useSyncStatus();
   const harvests = useHarvests();
   const observations = useObservations();
-  const now = useNow(hunt !== null);
+  const now = useNow(true);
   const { show, toast } = useToast();
 
   const handle = useRef<MapHandle | null>(null);
@@ -49,6 +51,7 @@ export function MapScreen() {
   const [saving, setSaving] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [alertDismissed, setAlertDismissed] = useState(false);
+  const [partyDismissed, setPartyDismissed] = useState(0);
 
   // Centre on the first GPS fix.
   useEffect(() => {
@@ -64,6 +67,11 @@ export function MapScreen() {
     else show(crossing.text);
   }, [crossing, show]);
 
+  const latestAlert = range.alerts[0];
+  useEffect(() => {
+    if (latestAlert && !latestAlert.warn) show(latestAlert.text);
+  }, [latestAlert, show]);
+
   const pins = useMemo<MapPin[]>(() => {
     if (!layers.records) return [];
     const h = harvests.flatMap((r) => {
@@ -78,6 +86,24 @@ export function MapScreen() {
   }, [harvests, observations, layers.records]);
 
   const isTagHolder = !party || party.tagHolderId === user?.id;
+  const tagHolder = range.members.find((m) => m.isTagHolder);
+  const tagHolderName = tagHolder?.isYou ? "you" : (tagHolder?.name ?? "the tag holder");
+  const ringCenter = tagHolder?.position ?? (hunt && isTagHolder ? position : null);
+
+  const memberMarkers = useMemo<MapMember[]>(
+    () =>
+      range.members.flatMap((m) =>
+        m.isYou || !m.position
+          ? []
+          : [{ id: m.nodeId, point: m.position, initials: initials(m.name), status: m.status, title: `${m.name}${m.isTagHolder ? " (tag holder)" : ""}` }],
+      ),
+    [range.members],
+  );
+
+  const problems = range.members.filter((m) => memberProblemText(m, tagHolderName, now) !== null);
+  const latestWarn = range.alerts.find((a) => a.warn)?.id ?? 0;
+  const partyText =
+    problems.length > 0 && latestWarn > partyDismissed ? problems.map((m) => memberProblemText(m, tagHolderName, now)).join(" ") : null;
   const offWmu = hunt && party?.wmuCode && here?.wmuCode && here.wmuCode !== party.wmuCode;
   const onClosed = here?.land.status === "closed";
   const initialCenter = position ?? (overlay ? { lon: overlay.center[0], lat: overlay.center[1] } : DEFAULT_CENTER);
@@ -112,14 +138,25 @@ export function MapScreen() {
   }
 
   const statusTop = 12;
-  const alertText = onClosed
+  const landAlert = onClosed
     ? `No hunting here${here?.land.area?.name ? ` — ${here.land.area.name}` : ""}. Move off this land.`
     : offWmu
       ? `You're in WMU ${here?.wmuCode}, outside your party's WMU ${party?.wmuCode}.`
       : crossing?.warn
         ? crossing.text
         : null;
-  const showAlert = !alertDismissed && alertText !== null;
+  const alertText = partyText ?? (alertDismissed ? null : landAlert);
+  const showAlert = alertText !== null;
+
+  function showProblem() {
+    const target = partyText ? problems.find((m) => !m.isYou)?.position ?? position : position;
+    if (target) handle.current?.flyTo(target, partyText ? 12 : 14);
+  }
+
+  function dismissAlert() {
+    if (partyText) setPartyDismissed(latestWarn);
+    else setAlertDismissed(true);
+  }
 
   return (
     <section className="ms">
@@ -132,8 +169,9 @@ export function MapScreen() {
         overlay={overlay}
         showWmu={layers.wmu}
         showLand={layers.land}
-        ringAround={hunt && isTagHolder ? position : null}
+        ringAround={ringCenter}
         pins={pins}
+        members={memberMarkers}
         onReady={(h) => {
           handle.current = h;
           h.map.dragRotate.disable();
@@ -181,10 +219,10 @@ export function MapScreen() {
             <p>{alertText}</p>
           </div>
           <div className="ms-alert-limit-actions">
-            <button type="button" className="ms-alert-view" onClick={() => position && handle.current?.flyTo(position, 14)}>
+            <button type="button" className="ms-alert-view" onClick={showProblem}>
               Show me
             </button>
-            <button type="button" className="ms-alert-dismiss" onClick={() => setAlertDismissed(true)}>
+            <button type="button" className="ms-alert-dismiss" onClick={dismissAlert}>
               Dismiss
             </button>
           </div>

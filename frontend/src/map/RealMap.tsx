@@ -24,6 +24,14 @@ export interface MapPin {
   title: string;
 }
 
+export interface MapMember {
+  id: string;
+  point: Point;
+  initials: string;
+  status: "ok" | "too_far" | "lost" | "unknown";
+  title: string;
+}
+
 export interface MapHandle {
   flyTo: (point: Point, zoom?: number) => void;
   map: maplibregl.Map;
@@ -39,6 +47,8 @@ interface Props {
   /** Draw a 5 km dashed ring around this point (the tag holder). */
   ringAround?: Point | null;
   pins?: MapPin[];
+  /** Other party members heard over the radio. */
+  members?: MapMember[];
   selectedPin?: string | null;
   onPinClick?: (id: string) => void;
   onMapClick?: (point: Point) => void;
@@ -72,6 +82,7 @@ export function RealMap({
   showLand = true,
   ringAround,
   pins = [],
+  members = [],
   selectedPin,
   onPinClick,
   onMapClick,
@@ -85,6 +96,7 @@ export function RealMap({
   const [error, setError] = useState<string | null>(null);
   const youMarker = useRef<maplibregl.Marker | null>(null);
   const pinMarkers = useRef<maplibregl.Marker[]>([]);
+  const memberMarkers = useRef<maplibregl.Marker[]>([]);
   const clickRef = useRef(onMapClick);
   clickRef.current = onMapClick;
 
@@ -174,6 +186,21 @@ export function RealMap({
       return new maplibregl.Marker({ element: el }).setLngLat([pin.point.lon, pin.point.lat]).addTo(map);
     });
   }, [pins, selectedPin, onPinClick]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    memberMarkers.current.forEach((m) => m.remove());
+    memberMarkers.current = members.map((member) => {
+      const el = document.createElement("span");
+      el.className = `real-member real-member-${member.status}`;
+      el.textContent = member.initials;
+      el.title = member.title;
+      el.setAttribute("role", "img");
+      el.setAttribute("aria-label", member.title);
+      return new maplibregl.Marker({ element: el }).setLngLat([member.point.lon, member.point.lat]).addTo(map);
+    });
+  }, [members]);
 
   return (
     <div className={`real-map ${className}`}>

@@ -102,3 +102,29 @@
   font-size: 12px;
   font-weight: 800;
 }
+
+.real-member {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 3px solid var(--paper);
+  border-radius: 99px;
+  background: var(--ok);
+  box-shadow: var(--shadow);
+  color: var(--paper);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.real-member-too_far {
+  background: var(--danger);
+}
+
+/* Last known spot only: shown faded so it never reads as a live position. */
+.real-member-lost,
+.real-member-unknown {
+  background: var(--muted);
+  opacity: 0.6;
+}

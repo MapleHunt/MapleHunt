@@ -69,6 +69,19 @@ describe("PositionBroadcaster", () => {
     expect(errors).toHaveLength(1);
   });
 
+  it("reports each fix that went out", async () => {
+    const mesh = new MockMesh();
+    const r = mesh.addRadio("pavi");
+    await r.connect();
+    const sent: GpsFix[] = [];
+    const fix = { lat: 45.31, lon: -78.1, fixAt: 1_000 };
+    const b = new PositionBroadcaster(r, async () => fix, { scheduler: manualScheduler().s, onSent: (f) => sent.push(f) });
+    await b.sendNow();
+    await r.disconnect();
+    await b.sendNow();
+    expect(sent).toEqual([fix]);
+  });
+
   it("stops cleanly", async () => {
     const { clock, b } = await setup(async () => null);
     b.start();

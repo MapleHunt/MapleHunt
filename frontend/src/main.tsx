@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router";
 import { App } from "./App";
 import { GeoProvider } from "./data/geo";
+import { PartyTracker } from "./data/partyRange";
 import { AppStateProvider } from "./state/AppState";
 import "./styles/base.css";
 
@@ -14,6 +15,7 @@ createRoot(root).render(
     <BrowserRouter>
       <AppStateProvider>
         <GeoProvider>
+          <PartyTracker />
           <App />
         </GeoProvider>
       </AppStateProvider>

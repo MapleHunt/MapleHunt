@@ -86,5 +86,5 @@ another way.
 ## Next
 
 - T14: put the party channel's AES-256 key in the invite QR and set it on the radio (`setChannel`).
-- T15: run `PositionBroadcaster` and `PartyRangeMonitor` on the real radio, 5 km ring and alert.
+- T15 runs in the app (`frontend/src/data/partyRange.tsx`): broadcaster on the share interval, a `PartyRangeMonitor` per phone, radio node ids mapped to members with `set_mesh_node` (migration 0006). Still to check on real radios: the 75 s alert target.
 - Field Day 1 range walk.

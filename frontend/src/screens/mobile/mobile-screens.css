@@ -476,6 +476,16 @@
   font-size: 11.5px;
 }
 
+.mp-member-radio {
+  color: var(--ok);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.mp-member-radio-warn {
+  color: var(--danger);
+}
+
 .mp-interval {
   display: flex;
   align-items: center;

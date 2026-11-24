@@ -27,6 +27,7 @@ export interface BroadcasterOptions {
   scheduler?: Scheduler;
   /** Called when a send fails (e.g. Bluetooth dropped). The loop keeps running. */
   onError?: (err: unknown) => void;
+  onSent?: (fix: GpsFix) => void;
 }
 
 /**
@@ -39,6 +40,7 @@ export class PositionBroadcaster {
   private readonly intervalMs: number;
   private readonly scheduler: Scheduler;
   private readonly onError: (err: unknown) => void;
+  private readonly onSent: (fix: GpsFix) => void;
 
   constructor(
     private readonly radio: RadioService,
@@ -48,6 +50,7 @@ export class PositionBroadcaster {
     this.intervalMs = options.intervalMs ?? 60_000;
     this.scheduler = options.scheduler ?? realScheduler;
     this.onError = options.onError ?? (() => {});
+    this.onSent = options.onSent ?? (() => {});
   }
 
   get running(): boolean {
@@ -73,6 +76,7 @@ export class PositionBroadcaster {
       const fix = await this.getFix();
       if (!fix || this.radio.getConnection() !== "connected") return false;
       await this.radio.sendPosition(fix);
+      this.onSent(fix);
       return true;
     } catch (err) {
       this.onError(err);
