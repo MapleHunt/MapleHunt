@@ -10,6 +10,8 @@ export const supabase: SupabaseClient<Database> | null =
   url && anonKey ? createClient<Database>(url, anonKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: "pkce" } }) : null;
 
 export const PROTOMAPS_KEY = (import.meta.env.VITE_PROTOMAPS_KEY as string | undefined) ?? "";
+/** Local testing only: call a locally running assistant function instead of the deployed one. */
+export const ASSISTANT_URL = (import.meta.env.VITE_ASSISTANT_URL as string | undefined) ?? "";
 export const MAP_PACK_URL = (import.meta.env.VITE_MAP_PACK_URL as string | undefined) ?? "";
 
 export function requireSupabase(): SupabaseClient<Database> {

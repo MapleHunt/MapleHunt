@@ -133,15 +133,36 @@ export async function refreshParty(force = true): Promise<void> {
 
 export async function createParty(input: { name: string; species: Enums<"species_t">; seasonYear: number; wmuCode: string | null }): Promise<void> {
   await run(async () => {
-    const { data, error } = await requireSupabase().rpc("create_party", {
+    const client = requireSupabase();
+    const { data, error } = await client.rpc("create_party", {
       p_name: input.name,
       p_species: input.species,
       p_season_year: input.seasonYear,
       ...(input.wmuCode ? { p_wmu_code: input.wmuCode } : {}),
     });
-    if (error) throw error;
-    await ensurePartyKey(data.id); // the radio channel key for this party
-    set({ party: await fetchParty(data.id) });
+    let partyId = data?.id;
+    if (error) {
+      // Until migration 20261124190000 is applied, create_party always fails RLS
+      // (it reads the new party back before the tag holder is a member). Doing it in
+      // two steps, without reading back, passes the same rules.
+      if (!/row-level security/i.test(error.message)) throw error;
+      const uid = (await client.auth.getSession()).data.session?.user.id;
+      if (!uid) throw new Error("Sign in to create a party.");
+      partyId = crypto.randomUUID();
+      const { error: pErr } = await client.from("parties").insert({
+        id: partyId,
+        name: input.name.trim(),
+        tag_holder_id: uid,
+        species: input.species,
+        season_year: input.seasonYear,
+        wmu_code: input.wmuCode,
+      });
+      if (pErr) throw pErr;
+      const { error: mErr } = await client.from("party_members").insert({ party_id: partyId, profile_id: uid, role: "tag_holder" });
+      if (mErr) throw mErr;
+    }
+    await ensurePartyKey(partyId!); // the radio channel key for this party
+    set({ party: await fetchParty(partyId!) });
   });
 }
 

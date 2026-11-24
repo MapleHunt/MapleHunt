@@ -1,5 +1,5 @@
 import { useEffect, useSyncExternalStore } from "react";
-import { requireSupabase, supabase } from "../lib/supabase";
+import { ASSISTANT_URL, requireSupabase, supabase } from "../lib/supabase";
 
 // Talks to the "assistant" Edge Function (supabase/functions/assistant), which
 // answers with Gemini from the saved regulations. Needs signal.
@@ -56,7 +56,9 @@ export async function ask(question: string): Promise<void> {
     return;
   }
   try {
-    const { data, error } = await requireSupabase().functions.invoke<{ answer: string; citations: Citation[] }>("assistant", { body: { question: q } });
+    const { data, error } = ASSISTANT_URL
+      ? await askLocal(q)
+      : await requireSupabase().functions.invoke<{ answer: string; citations: Citation[] }>("assistant", { body: { question: q } });
     if (error) {
       const ctx = (error as { context?: Response }).context;
       const detail = ctx && typeof ctx.json === "function" ? ((await ctx.json().catch(() => null)) as { error?: string } | null)?.error : null;
@@ -67,6 +69,19 @@ export async function ask(question: string): Promise<void> {
   } catch (err) {
     updateTurn(id, { status: "error", error: err instanceof Error ? err.message : String(err) });
   }
+}
+
+/** VITE_ASSISTANT_URL set: the function runs on this computer (deno run supabase/functions/assistant/index.ts). */
+async function askLocal(question: string): Promise<{ data: { answer: string; citations: Citation[] } | null; error: Error | null }> {
+  const { data: session } = await requireSupabase().auth.getSession();
+  const res = await fetch(ASSISTANT_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.session?.access_token ?? ""}` },
+    body: JSON.stringify({ question }),
+  });
+  const body = (await res.json().catch(() => null)) as { answer?: string; citations?: Citation[]; error?: string } | null;
+  if (!res.ok) return { data: null, error: new Error(body?.error ?? `Assistant error (HTTP ${res.status})`) };
+  return { data: { answer: body?.answer ?? "", citations: body?.citations ?? [] }, error: null };
 }
 
 export function newConversation(): void {
