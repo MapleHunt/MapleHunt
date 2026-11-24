@@ -50,6 +50,6 @@ pnpm --filter @maplehunt/geo test
 
 ## Next
 
-- Load WMU 47 + Crown land from the offline map pack (PMTiles) instead of test squares.
-- Cross-check `checkPosition` against PostGIS (`wmu_at` / `land_at`) at Arshdeep's 10 test points.
+- Load WMU 87D + Crown land from the offline map pack instead of test squares. The pack (map-packs/manifest.json in Supabase Storage) has `wmu` (wmuCode) and `land` (category, huntingStatus) layers.
+- Cross-check `checkPosition` against PostGIS (`wmu_at` / `land_at` / `check_position`, live since migration 0005) at Arshdeep's 10 test points (T24).
 - Measure `checkPosition` against the ≤ 100 ms target on a real Android phone.
