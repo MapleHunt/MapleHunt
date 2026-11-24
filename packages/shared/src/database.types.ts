@@ -486,6 +486,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_position: { Args: { lat: number; lon: number }; Returns: Json }
       create_party: {
         Args: {
           p_name: string
@@ -493,10 +494,27 @@ export type Database = {
           p_species: Database["public"]["Enums"]["species_t"]
           p_wmu_code?: string
         }
-        Returns: Database["public"]["Tables"]["parties"]["Row"]
+        Returns: {
+          created_at: string
+          id: string
+          join_code: string
+          mesh_channel: string | null
+          name: string
+          season_year: number
+          species: Database["public"]["Enums"]["species_t"]
+          tag_holder_id: string
+          wmu_code: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "parties"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       is_party_member: { Args: { p_party: string }; Returns: boolean }
       join_party: { Args: { p_code: string }; Returns: string }
+      land_at: { Args: { lat: number; lon: number }; Returns: Json }
       map_overlay: {
         Args: { lat: number; lon: number; radius_km?: number }
         Returns: Json
@@ -508,16 +526,17 @@ export type Database = {
         Returns: {
           body: string
           id: number
-          page: number | null
+          page: number
           rank: number
           season_year: number
-          section: string | null
-          source_url: string | null
+          section: string
+          source_url: string
         }[]
       }
       shares_party_with: { Args: { p_profile: string }; Returns: boolean }
       sync_pull: { Args: { since?: string }; Returns: Json }
       sync_push: { Args: { payload: Json }; Returns: Json }
+      wmu_at: { Args: { lat: number; lon: number }; Returns: string }
     }
     Enums: {
       age_class_t: "adult" | "yearling" | "young"
