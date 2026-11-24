@@ -1,13 +1,14 @@
 // MapleHunt field assistant (T22 / T23).
 //
 // POST { question } with the user's Supabase session.
-//   1. Finds the most relevant regulation passages (search_regs, migration 0003).
-//   2. Asks a fast Gemini model (gemini.ts) to answer from those passages first,
-//      citing them. If they don't cover the question it may answer from general
-//      knowledge, and the answer says so plainly.
+//   1. Finds the most relevant regulation passages (retrieve.ts: the ~380
+//      passages are kept in memory and ranked here; refreshed hourly).
+//   2. Asks a fast Gemini model (gemini.ts) to answer (prompt.ts): rules
+//      questions from the passages first, with citations; anything else from
+//      general knowledge. Rules answers not from the PDF say so plainly.
 //   3. Saves the question/answer to assistant_queries (RLS: your own rows), after replying.
 // Returns { answer, citations: [{ id, section, page, source_url, season_year }], basis, model, ms }.
-//   basis: "regulations" | "general" | "mixed"
+//   basis: "regulations" | "mixed" | "general" | "other"
 //
 // Secrets (Supabase dashboard → Edge Functions → Secrets, or supabase/functions/.env locally):
 //   GEMINI_API_KEY   required
@@ -15,7 +16,11 @@
 // SUPABASE_URL and SUPABASE_ANON_KEY are provided by Supabase automatically.
 
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
+import type { SupabaseClient } from "npm:@supabase/supabase-js@2.49.4";
 import { FAST_MODELS, GeminiBusyError, fastGenerate } from "./gemini.ts";
+import { NOT_FOUND, buildPrompt, parseAnswer, withNote } from "./prompt.ts";
+import { RegIndex } from "./retrieve.ts";
+import type { Chunk } from "./retrieve.ts";
 
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
 
@@ -29,20 +34,21 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 }
 
-interface Chunk {
-  id: number;
-  season_year: number;
-  section: string | null;
-  body: string;
-  page: number | null;
-  source_url: string | null;
+// The regulations, loaded once per function instance.
+let index: { idx: RegIndex; at: number } | null = null;
+const INDEX_TTL_MS = 60 * 60 * 1000;
+
+// deno-lint-ignore no-explicit-any
+async function regIndex(supabase: SupabaseClient<any, "public", any>): Promise<RegIndex> {
+  if (index && Date.now() - index.at < INDEX_TTL_MS) return index.idx;
+  const { data, error } = await supabase.from("reg_chunks").select("id, season_year, section, body, page, source_url").limit(5000);
+  if (error) {
+    if (index) return index.idx; // keep the old copy rather than fail
+    throw error;
+  }
+  index = { idx: new RegIndex((data ?? []) as Chunk[]), at: Date.now() };
+  return index.idx;
 }
-
-const NOT_FOUND =
-  "I couldn't find this in the saved hunting regulations. Check the official Ontario Hunting Regulations Summary or ask a Conservation Officer.";
-const GENERAL_NOTE = "This part isn't from the regulations PDF — confirm it in the official Ontario Hunting Regulations Summary.";
-
-type Basis = "regulations" | "general" | "mixed";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -67,58 +73,34 @@ Deno.serve(async (req) => {
     global: { headers: { Authorization: authHeader } },
   });
 
-  // 1. Who's asking + retrieve passages, at the same time.
-  //    Try the whole question, then fall back to an OR of its words.
-  const search = async () => {
-    let { data, error } = await supabase.rpc("search_regs", { q: question, max_results: 5 });
-    if (!error && (!data || data.length === 0)) {
-      const words = question.toLowerCase().match(/[a-z0-9]{3,}/g) ?? [];
-      if (words.length) ({ data, error } = await supabase.rpc("search_regs", { q: words.join(" or "), max_results: 5 }));
-    }
-    return { data, error };
-  };
-  const [{ data: userData }, { data: chunks, error }] = await Promise.all([supabase.auth.getUser(), search()]);
+  // 1. Who's asking + the regulations index, at the same time.
+  const [{ data: userData }, idxResult] = await Promise.all([
+    supabase.auth.getUser(),
+    regIndex(supabase).then(
+      (idx) => ({ idx, error: null as string | null }),
+      (err: unknown) => ({ idx: null, error: err instanceof Error ? err.message : String(err) }),
+    ),
+  ]);
   const user = userData.user;
   if (!user) return json({ error: "Sign in to use the assistant" }, 401);
-  if (error) return json({ error: error.message }, 500);
-  const passages = (chunks ?? []) as Chunk[];
+  // No regulations available is not fatal: it can still answer from general knowledge.
+  if (idxResult.error) console.error("reg index", idxResult.error);
+  const passages = idxResult.idx ? idxResult.idx.search(question, 5) : [];
 
-  // 2. Generate: regulations first, general knowledge only when they don't cover it.
-  const context = passages.length
-    ? passages.map((c, i) => `[${i + 1}] ${c.section ?? "Regulations"} (${c.season_year}, p. ${c.page ?? "?"})\n${c.body}`).join("\n\n")
-    : "(no matching passages found)";
-  const prompt = `You are MapleHunt's field assistant for Ontario hunters.
-Answer the hunter's question.
-- Use the Ontario Hunting Regulations passages below first, and cite the ones you used.
-- If the passages don't fully answer it, you may add what you know about Ontario hunting, but only what you are confident is correct, and never invent dates, fees, bag limits or WMU-specific rules that aren't in the passages.
-- If you don't know, say so and point them to the official Ontario Hunting Regulations Summary.
-- Be short and plain: 1–4 sentences a hunter can read in the field. Wrap the key rule or number in **double asterisks**.
-- Return JSON: {"answer": string, "sources": number[], "basis": "regulations" | "general" | "mixed"}
-  sources = passage numbers you used; basis = "regulations" if only from passages, "general" if none were used, "mixed" if both.
-
-Passages:
-${context}
-
-Question: ${question}`;
-
+  // 2. Generate.
   let answer = NOT_FOUND;
   let cited: number[] = [];
-  let basis: Basis = "regulations";
+  let basis = "general";
   let model = "";
   let ms = 0;
   try {
-    const out = await fastGenerate({ apiKey, prompt, models });
+    const out = await fastGenerate({ apiKey, prompt: buildPrompt(question, passages), models });
     model = out.model;
     ms = out.ms;
-    try {
-      const parsed = JSON.parse(out.text) as { answer?: string; sources?: number[]; basis?: string };
-      answer = parsed.answer?.trim() || NOT_FOUND;
-      cited = (parsed.sources ?? []).map((n) => passages[n - 1]?.id).filter((id): id is number => typeof id === "number");
-      basis = parsed.basis === "general" || parsed.basis === "mixed" ? parsed.basis : cited.length ? "regulations" : "general";
-    } catch {
-      answer = out.text.trim() || NOT_FOUND;
-      basis = "general";
-    }
+    const parsed = parseAnswer(out.text);
+    cited = parsed.sourceIndexes.map((n) => passages[n - 1]?.id).filter((id): id is number => typeof id === "number");
+    basis = parsed.basis;
+    answer = withNote(parsed.answer, parsed.basis);
   } catch (err) {
     if (err instanceof GeminiBusyError) {
       console.error("gemini busy", err.details);
@@ -126,8 +108,6 @@ Question: ${question}`;
     }
     return json({ error: `Gemini error: ${err instanceof Error ? err.message : String(err)}` }, 502);
   }
-  if (cited.length === 0 && basis === "regulations") basis = "general";
-  if (basis !== "regulations" && answer !== NOT_FOUND) answer = `${answer}\n\n${GENERAL_NOTE}`;
 
   const citations = passages
     .filter((c) => cited.includes(c.id))
