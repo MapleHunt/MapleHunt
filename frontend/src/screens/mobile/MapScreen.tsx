@@ -14,6 +14,7 @@ import { speciesLabel, useHarvests, useObservations } from "../../data/useRecord
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
 import { RealMap } from "../../map/RealMap";
 import type { MapHandle, MapMember, MapPin } from "../../map/RealMap";
+import { usePackStatus } from "../../map/mapPack";
 import { saveAreaOffline } from "../../map/offlineArea";
 import "./mobile-screens.css";
 
@@ -49,6 +50,8 @@ export function MapScreen() {
   const [sheet, setSheet] = useState(false);
   const [layers, setLayers] = useState({ wmu: true, land: true, records: true });
   const [saving, setSaving] = useState<string | null>(null);
+  const pack = usePackStatus();
+  const packReady = pack.state === "ready" && !pack.update;
   const [busy, setBusy] = useState(false);
   const [alertDismissed, setAlertDismissed] = useState(false);
   const [partyDismissed, setPartyDismissed] = useState(0);
@@ -249,10 +252,12 @@ export function MapScreen() {
               <input type="checkbox" className="dm-toggle" checked={layers[key]} onChange={() => setLayers((l) => ({ ...l, [key]: !l[key] }))} />
             </label>
           ))}
-          <Button variant="outline" size="md" block disabled={!online || saving !== null} onClick={() => void saveArea()}>
-            {saving ?? "Save this area for offline"}
+          <Button variant="outline" size="md" block disabled={!online || saving !== null || packReady} onClick={() => void saveArea()}>
+            {saving ?? (pack.state === "none" ? "Save this area for offline" : packReady ? "Offline map ready ✓" : "Download offline map")}
           </Button>
-          <p className="ms-sheet-note">Saves the map within 8 km so it shows with no signal.</p>
+          <p className="ms-sheet-note">
+            {pack.state === "none" ? "Saves the map within 8 km so it shows with no signal." : "The whole hunt-area map, checked after download, so it shows with no signal."}
+          </p>
         </div>
       )}
 

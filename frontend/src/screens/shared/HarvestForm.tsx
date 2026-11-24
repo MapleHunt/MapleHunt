@@ -3,7 +3,7 @@ import type { FormEvent } from "react";
 import type { Enums } from "@maplehunt/shared";
 import { Button, Field, Icon, Segmented } from "../../components/ui";
 import { db } from "../../data/db";
-import { DEFAULT_CENTER, useGeo } from "../../data/geo";
+import { DEFAULT_CENTER, useGeo, usePlaceCheck } from "../../data/geo";
 import { localDate, useActiveHunt } from "../../data/hunt";
 import { useParty } from "../../data/party";
 import { formatPoint, parsePointText, saveRecord, toPointText } from "../../data/records";
@@ -31,7 +31,7 @@ interface Props {
 }
 
 export function HarvestForm({ editId, onSaved }: Props) {
-  const { position, here, overlay, checkAt } = useGeo();
+  const { position, here, overlay } = useGeo();
   const { party } = useParty();
   const hunt = useActiveHunt();
 
@@ -76,7 +76,7 @@ export function HarvestForm({ editId, onSaved }: Props) {
     setAccuracy(position.accuracy);
   }, [editId, position?.lat, position?.lon]);
 
-  const check = point ? checkAt(point) : null;
+  const check = usePlaceCheck(point);
   const wmuCode = check?.wmuCode ?? (editId ? null : here?.wmuCode) ?? null;
 
   async function handleSubmit(event: FormEvent) {

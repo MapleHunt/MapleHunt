@@ -63,7 +63,15 @@ export default defineConfig({
           {
             urlPattern: ({ url }) => url.pathname.endsWith(".pmtiles"),
             handler: "CacheFirst",
-            options: { cacheName: "map-packs", cacheableResponse: { statuses: [200] } },
+            // The map reads the pack with Range requests (206), which the Cache API can't store.
+            // "Save area offline" stores the whole file once (200, see map/offlineArea.ts);
+            // rangeRequests then answers each 206 read from that copy, so the pack works offline.
+            options: {
+              cacheName: "map-packs",
+              cacheableResponse: { statuses: [200] },
+              rangeRequests: true,
+              matchOptions: { ignoreVary: true },
+            },
           },
         ],
       },

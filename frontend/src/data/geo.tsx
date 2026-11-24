@@ -7,9 +7,11 @@ import { kvGet, kvSet } from "./db";
 import { useParty } from "./party";
 import type { Point } from "./records";
 
-// GPS + "which WMU / what land am I on". Polygons near you are fetched once with
-// signal (map_overlay RPC, migration 0003) and cached, then the land check runs
-// on the phone with @maplehunt/geo, so it keeps working with no signal.
+// GPS + "which WMU / what land am I on".
+// With signal: the database answers for the exact point (check_position RPC,
+// migration 0005), so any spot on the map works, not just the loaded area.
+// Without signal: polygons near you, fetched earlier (map_overlay RPC, migration
+// 0003) and cached, are checked on the phone with @maplehunt/geo.
 
 export interface Position extends Point {
   accuracy: number;
@@ -57,6 +59,74 @@ export interface Crossing {
 export const MAX_CHECK_ACCURACY_M = 100;
 
 const Ctx = createContext<GeoState | null>(null);
+
+const landStatuses: readonly LandStatus[] = ["crown", "closed", "check"];
+
+/** Reads the check_position RPC result; null if it isn't the expected shape. */
+export function parseServerCheck(data: unknown): PositionCheck | null {
+  if (!data || typeof data !== "object") return null;
+  const d = data as { wmuCode?: unknown; land?: { status?: unknown; message?: unknown; area?: unknown } };
+  const land = d.land;
+  if (!land || !landStatuses.includes(land.status as LandStatus) || typeof land.message !== "string") return null;
+  const a = land.area as { id?: unknown; name?: unknown; category?: unknown } | null | undefined;
+  const area =
+    a && typeof a.id === "number" && typeof a.category === "string"
+      ? { id: a.id, name: typeof a.name === "string" ? a.name : undefined, category: a.category as LandArea["category"] }
+      : null;
+  return { wmuCode: typeof d.wmuCode === "string" ? d.wmuCode : null, land: { status: land.status as LandStatus, message: land.message, area } };
+}
+
+// ~11 m: close enough that GPS jitter doesn't cause a new lookup every few seconds.
+const pointKey = (p: Point) => `${p.lon.toFixed(4)},${p.lat.toFixed(4)}`;
+const serverChecks = new Map<string, PositionCheck>();
+
+/** The database's land check for a point, or null with no signal / on any error. */
+export async function checkOnline(point: Point): Promise<PositionCheck | null> {
+  if (!supabase || !navigator.onLine) return null;
+  const key = pointKey(point);
+  const hit = serverChecks.get(key);
+  if (hit) return hit;
+  try {
+    const { data, error } = await supabase.rpc("check_position", { lon: point.lon, lat: point.lat });
+    if (error) return null;
+    const check = parseServerCheck(data);
+    if (check) {
+      if (serverChecks.size > 500) serverChecks.clear();
+      serverChecks.set(key, check);
+    }
+    return check;
+  } catch {
+    return null;
+  }
+}
+
+/** Shows the on-device answer straight away, then the database's answer once it arrives. */
+function useServerCheck(point: Point | null, local: PositionCheck | null): PositionCheck | null {
+  const key = point ? pointKey(point) : null;
+  const [server, setServer] = useState<{ key: string; check: PositionCheck } | null>(null);
+  const pointRef = useRef(point);
+  pointRef.current = point;
+
+  useEffect(() => {
+    const p = pointRef.current;
+    if (!key || !p) return;
+    let live = true;
+    void checkOnline(p).then((check) => {
+      if (live && check) setServer({ key, check });
+    });
+    return () => {
+      live = false;
+    };
+  }, [key]);
+
+  return server && server.key === key ? server.check : local;
+}
+
+/** Land check for any point (e.g. a map click): database when online, cached polygons otherwise. */
+export function usePlaceCheck(point: Point | null): PositionCheck | null {
+  const { checkAt } = useGeo();
+  return useServerCheck(point, point ? checkAt(point) : null);
+}
 
 function areas(overlay: Overlay | null): { wmus: WmuArea[]; lands: LandArea[] } {
   if (!overlay) return { wmus: [], lands: [] };
@@ -139,7 +209,8 @@ export function GeoProvider({ children }: { children: ReactNode }) {
     [overlay, wmus, lands],
   );
 
-  const here = useMemo(() => (position ? checkAt(position) : null), [position, checkAt]);
+  const localHere = useMemo(() => (position ? checkAt(position) : null), [position, checkAt]);
+  const here = useServerCheck(position, localHere);
 
   const { party } = useParty();
   const partyWmu = party?.wmuCode ?? null;

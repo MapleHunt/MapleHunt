@@ -1,11 +1,14 @@
 import { useLiveQuery } from "dexie-react-hooks";
 import { kvGet, kvSet } from "../data/db";
 import { MAP_PACK_URL } from "../lib/supabase";
+import { downloadPack } from "./mapPack";
 import { tileJsonUrl } from "./mapStyle";
 
-// "Save area offline": downloads every map tile around a point (zoom 8–15) while
-// you have signal. The service worker keeps them (cache "map-tiles"), so that
-// area of the map still draws in the bush. Works in the installed/production app.
+// "Save area offline", two ways:
+// - Online tiles (no VITE_MAP_PACK_URL): downloads every map tile around a point
+//   (zoom 8–15). The service worker keeps them (cache "map-tiles").
+// - Map pack (VITE_MAP_PACK_URL): downloads the whole pack once, see mapPack.ts.
+// Works in the installed/production app.
 
 export interface SavedArea {
   id: string;
@@ -43,9 +46,12 @@ export async function saveAreaOffline(
   name: string,
   onProgress: (done: number, total: number) => void,
   radiusKm = 8,
-): Promise<SavedArea> {
-  if (MAP_PACK_URL) throw new Error("This build uses an offline map pack already.");
+): Promise<SavedArea | null> {
   if (!navigator.onLine) throw new Error("Saving an area needs signal.");
+  if (MAP_PACK_URL) {
+    await downloadPack(onProgress);
+    return null;
+  }
   const tj = (await (await fetch(tileJsonUrl())).json()) as { tiles: string[]; maxzoom?: number };
   const template = tj.tiles[0];
   if (!template) throw new Error("Map service did not return a tile address.");

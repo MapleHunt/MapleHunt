@@ -2,13 +2,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as maplibregl from "maplibre-gl";
 import { Button, Divider, Icon, MobileNote, StatusBadge } from "../../components/ui";
 import type { BadgeTone } from "../../components/ui";
-import { DEFAULT_CENTER, useGeo } from "../../data/geo";
+import { DEFAULT_CENTER, useGeo, usePlaceCheck } from "../../data/geo";
 import { formatPoint, parsePointText } from "../../data/records";
 import type { Point } from "../../data/records";
 import { formatDate, speciesLabel, useHarvests, useObservations } from "../../data/useRecords";
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
 import { RealMap } from "../../map/RealMap";
 import type { MapHandle, MapPin } from "../../map/RealMap";
+import { usePackStatus } from "../../map/mapPack";
 import { saveAreaOffline } from "../../map/offlineArea";
 import "./desktop-screens.css";
 
@@ -24,7 +25,7 @@ const statusBadge: Record<string, { tone: BadgeTone; text: string; category: str
 };
 
 export function MapPage() {
-  const { overlay, position, checkAt, loadOverlayAt } = useGeo();
+  const { overlay, position, here, checkAt, loadOverlayAt } = useGeo();
   const online = useOnlineStatus();
   const harvests = useHarvests();
   const observations = useObservations();
@@ -32,6 +33,8 @@ export function MapPage() {
   const [layers, setLayers] = useState<Record<LayerName, boolean>>({ "WMU boundaries": true, "Crown land": true, "My harvests": true, "My observations": true });
   const [selected, setSelected] = useState<{ point: Point; pinId?: string; title: string } | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
+  const pack = usePackStatus();
+  const packReady = pack.state === "ready" && !pack.update;
   const toggle = (name: LayerName) => setLayers((l) => ({ ...l, [name]: !l[name] }));
 
   const pins = useMemo<MapPin[]>(() => {
@@ -50,12 +53,14 @@ export function MapPage() {
   }, [harvests, observations, layers]);
 
   const initialCenter = pins[0]?.point ?? position ?? (overlay ? { lon: overlay.center[0], lat: overlay.center[1] } : DEFAULT_CENTER);
-  const check = selected ? checkAt(selected.point) : null;
+  const localCheck = selected ? checkAt(selected.point) : null;
+  // Database answer when online (works anywhere), cached polygons otherwise.
+  const check = usePlaceCheck(selected?.point ?? null);
 
-  // If the clicked spot is outside the saved land data, fetch data for it.
+  // If the clicked spot is outside the saved land data, cache polygons around it for offline use.
   useEffect(() => {
-    if (selected && !check && online) void loadOverlayAt(selected.point);
-  }, [selected, check, online, loadOverlayAt]);
+    if (selected && !localCheck && online) void loadOverlayAt(selected.point);
+  }, [selected, localCheck, online, loadOverlayAt]);
 
   // Without a GPS fix, load land data for wherever the map starts.
   useEffect(() => {
@@ -64,7 +69,8 @@ export function MapPage() {
   }, []);
 
   const badge = check ? statusBadge[check.land.status]! : null;
-  const wmuTitle = check?.wmuCode ?? overlay?.wmu.features[0]?.properties.wmuCode;
+  // Only name a WMU we actually know the point is in (never just "the first one loaded").
+  const wmuTitle = selected ? check?.wmuCode : here?.wmuCode;
 
   async function saveArea() {
     const map = handle.current?.map;
@@ -89,8 +95,8 @@ export function MapPage() {
           <h2 className="d-card-title">{wmuTitle ? `WMU ${wmuTitle}` : "Map"}{selected ? ` · ${selected.title}` : ""}</h2>
           <p className="d-small-muted">Scout access, review your records and plan your next hunt. Click the map for a land check.</p>
         </div>
-        <Button size="desk" icon="d2-bookmark.svg" disabled={!online || saving !== null} onClick={() => void saveArea()}>
-          {saving ?? "Save area offline"}
+        <Button size="desk" icon="d2-bookmark.svg" disabled={!online || saving !== null || packReady} onClick={() => void saveArea()}>
+          {saving ?? (pack.state === "none" ? "Save area offline" : packReady ? "Offline map ready ✓" : "Download offline map")}
         </Button>
       </div>
 

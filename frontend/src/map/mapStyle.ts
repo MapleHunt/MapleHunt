@@ -1,12 +1,13 @@
 import { layers, namedFlavor } from "@protomaps/basemaps";
 import type { LayerSpecification, StyleSpecification } from "maplibre-gl";
-import { MAP_PACK_URL, PROTOMAPS_KEY } from "../lib/supabase";
+import { PROTOMAPS_KEY } from "../lib/supabase";
+import { activePackUrl } from "./mapPack";
 
 export const BASE = "protomaps";
 
-/** Online: Protomaps' hosted OpenStreetMap tiles. Offline pack: a local .pmtiles file (VITE_MAP_PACK_URL). */
-export function tileJsonUrl(): string {
-  if (MAP_PACK_URL) return `pmtiles://${new URL(MAP_PACK_URL, location.href).href}`;
+/** Online: Protomaps' hosted OpenStreetMap tiles. Offline: the map pack saved on this device (mapPack.ts). */
+export function tileJsonUrl(packUrl = activePackUrl()): string {
+  if (packUrl) return `pmtiles://${new URL(packUrl, location.href).href}`;
   return `https://api.protomaps.com/tiles/v4.json?key=${PROTOMAPS_KEY}`;
 }
 
@@ -19,7 +20,7 @@ const colors = {
 };
 
 // Our layers sit under the basemap's labels so place names stay readable.
-const overlayLayers: LayerSpecification[] = [
+const geojsonOverlayLayers: LayerSpecification[] = [
   {
     id: "land-fill",
     type: "fill",
@@ -49,7 +50,7 @@ const overlayLayers: LayerSpecification[] = [
   { id: "ring-line", type: "line", source: "ring", paint: { "line-color": colors.ring, "line-width": 2, "line-dasharray": [2, 2] } },
 ];
 
-const labelLayers: LayerSpecification[] = [
+const geojsonLabelLayers: LayerSpecification[] = [
   {
     id: "wmu-label",
     type: "symbol",
@@ -66,11 +67,28 @@ const labelLayers: LayerSpecification[] = [
 
 const emptyCollection = { type: "FeatureCollection" as const, features: [] };
 
-export function buildStyle(): StyleSpecification {
+type SourcedLayer = Exclude<LayerSpecification, { type: "background" }>;
+
+/**
+ * With a map pack, WMU + land polygons come from the pack's own "wmu" / "land" layers
+ * (same property names), so they draw everywhere the pack covers, with or without signal.
+ * Without one they come from the geojson sources filled by map_overlay.
+ */
+function fromPack(list: LayerSpecification[]): LayerSpecification[] {
+  return list.map((l) => {
+    const layer = l as SourcedLayer;
+    if (layer.source !== "wmu" && layer.source !== "land") return l;
+    return { ...layer, source: BASE, "source-layer": layer.source } as LayerSpecification;
+  });
+}
+
+export function buildStyle(packUrl = activePackUrl()): StyleSpecification {
   const assets = new URL(`${import.meta.env.BASE_URL}basemaps-assets`, location.href).href;
   const base = layers(BASE, namedFlavor("light"), { lang: "en" }) as LayerSpecification[];
   const firstLabel = base.findIndex((l) => l.type === "symbol");
   const split = firstLabel === -1 ? base.length : firstLabel;
+  const overlayLayers = packUrl ? fromPack(geojsonOverlayLayers) : geojsonOverlayLayers;
+  const labelLayers = packUrl ? fromPack(geojsonLabelLayers) : geojsonLabelLayers;
 
   return {
     version: 8,
@@ -79,7 +97,7 @@ export function buildStyle(): StyleSpecification {
     sources: {
       [BASE]: {
         type: "vector",
-        url: tileJsonUrl(),
+        url: tileJsonUrl(packUrl),
         attribution: '<a href="https://protomaps.com">Protomaps</a> © <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>',
       },
       wmu: { type: "geojson", data: emptyCollection },
