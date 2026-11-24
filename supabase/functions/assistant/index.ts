@@ -134,7 +134,10 @@ Question: ${question}`;
     .map(({ id, section, page, source_url, season_year }) => ({ id, section, page, source_url, season_year }));
 
   // 3. Save history after replying (best effort), so it doesn't add to the wait.
-  const save = supabase.from("assistant_queries").insert({ user_id: user.id, question, answer, cited_chunk_ids: cited }).then(() => undefined);
+  const save = Promise.resolve(supabase.from("assistant_queries").insert({ user_id: user.id, question, answer, cited_chunk_ids: cited })).then(
+    () => undefined,
+    () => undefined,
+  );
   if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(save);
   else await save;
 
