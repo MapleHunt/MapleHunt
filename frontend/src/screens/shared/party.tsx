@@ -12,18 +12,18 @@ import { useOnlineStatus } from "../../hooks/useOnlineStatus";
 import "./party.css";
 
 /** QR image (data URL) for a party's join link. */
-export function useJoinQr(code: string | undefined): string | null {
+export function useJoinQr(code: string | undefined, key: string | null = null): string | null {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
     if (!code) return setUrl(null);
     let alive = true;
-    QRCode.toDataURL(joinLink(code), { margin: 1, width: 528, color: { dark: "#183d32", light: "#ffffff" } })
+    QRCode.toDataURL(joinLink(code, key), { margin: 1, width: 528, color: { dark: "#183d32", light: "#ffffff" } })
       .then((u) => alive && setUrl(u))
       .catch(() => alive && setUrl(null));
     return () => {
       alive = false;
     };
-  }, [code]);
+  }, [code, key]);
   return url;
 }
 

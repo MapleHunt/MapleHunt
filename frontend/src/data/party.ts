@@ -1,6 +1,7 @@
 import { useEffect, useSyncExternalStore } from "react";
 import type { Enums } from "@maplehunt/shared";
 import { requireSupabase, supabase } from "../lib/supabase";
+import { adoptInviteKey, clearPendingJoin, ensurePartyKey, inviteLink, normalizeCode, pendingJoin, queueJoin, saveInviteKey } from "./partyKey";
 
 // The signed-in user's party (the most recently joined one), cached on the phone
 // so the Party screen and hunt logging work offline.
@@ -139,17 +140,54 @@ export async function createParty(input: { name: string; species: Enums<"species
       ...(input.wmuCode ? { p_wmu_code: input.wmuCode } : {}),
     });
     if (error) throw error;
+    await ensurePartyKey(data.id); // the radio channel key for this party
     set({ party: await fetchParty(data.id) });
   });
 }
 
-export async function joinParty(code: string): Promise<void> {
-  await run(async () => {
-    const { data, error } = await requireSupabase().rpc("join_party", { p_code: code.trim().toUpperCase() });
+/**
+ * Join with a code (and the radio key from a scanned invite QR).
+ * With no signal the key is kept and the join waits: "queued". It is sent when
+ * the phone is back online (resumePendingJoin).
+ */
+export async function joinParty(code: string, key?: string | null): Promise<"joined" | "queued"> {
+  const c = normalizeCode(code);
+  if (key) await saveInviteKey(c, key);
+  if (!navigator.onLine) {
+    await queueJoin(c);
+    return "queued";
+  }
+  return run(async () => {
+    const { data, error } = await requireSupabase().rpc("join_party", { p_code: c });
     if (error) throw error;
+    await adoptInviteKey(c, data);
+    await clearPendingJoin();
     set({ party: await fetchParty(data) });
+    return "joined" as const;
   });
 }
+
+let resuming = false;
+
+/** Sends a join that was scanned with no signal. Safe to call any time. */
+export async function resumePendingJoin(): Promise<void> {
+  if (resuming || !supabase || !navigator.onLine) return;
+  const code = await pendingJoin();
+  if (!code) return;
+  const { data: session } = await supabase.auth.getSession();
+  if (!session.session) return;
+  resuming = true;
+  try {
+    await joinParty(code);
+  } catch {
+    // e.g. the code was changed meanwhile: the error shows on the Party screen.
+    await clearPendingJoin();
+  } finally {
+    resuming = false;
+  }
+}
+
+if (typeof window !== "undefined") window.addEventListener("online", () => void resumePendingJoin());
 
 export async function removeMember(partyId: string, profileId: string): Promise<void> {
   await run(async () => {
@@ -184,11 +222,12 @@ export function useParty(): PartyState {
     () => state,
   );
   useEffect(() => {
-    void refreshParty(false).catch(() => undefined);
+    void resumePendingJoin().then(() => refreshParty(false)).catch(() => undefined);
   }, []);
   return s;
 }
 
-export function joinLink(code: string): string {
-  return `${location.origin}/join/${encodeURIComponent(code)}`;
+/** Invite link; with the party key it also sets up the private radio channel. */
+export function joinLink(code: string, key: string | null = null): string {
+  return inviteLink(code, key);
 }

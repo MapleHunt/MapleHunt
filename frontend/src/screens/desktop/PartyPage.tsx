@@ -2,6 +2,7 @@ import { Avatar, Button, Divider, Icon, MobileNote, Segmented, TagHolderBadge } 
 import { useToast } from "../../components/useToast";
 import { initials, useAuthUser } from "../../data/auth";
 import { joinLink, leaveParty, removeMember, rotateJoinCode, useParty } from "../../data/party";
+import { useInviteKey } from "../../data/partyKey";
 import { speciesLabel } from "../../data/useRecords";
 import { PageHeading } from "../../layout/DesktopShell";
 import { useAppState } from "../../state/AppState";
@@ -19,7 +20,8 @@ export function PartyPage() {
   const user = useAuthUser();
   const { party, loading } = useParty();
   const { shareInterval, setShareInterval } = useAppState();
-  const qr = useJoinQr(party?.joinCode);
+  const inviteKey = useInviteKey(party?.id, !!party && party.tagHolderId === user?.id);
+  const qr = useJoinQr(party?.joinCode, inviteKey);
   const { show, toast } = useToast();
 
   if (!party) {
@@ -36,7 +38,7 @@ export function PartyPage() {
   const others = party.members.filter((m) => m.profileId !== user?.id);
 
   async function shareInvite() {
-    const url = joinLink(party!.joinCode);
+    const url = joinLink(party!.joinCode, inviteKey);
     if (navigator.share) await navigator.share({ title: `Join ${party!.name} on MapleHunt`, text: `Join code ${party!.joinCode}`, url }).catch(() => undefined);
     else await copyText(url, show, "Invite link copied");
   }

@@ -3,13 +3,14 @@ import { Avatar, Button, Icon, TagHolderBadge } from "../../components/ui";
 import { useToast } from "../../components/useToast";
 import { initials, useAuthUser } from "../../data/auth";
 import { joinLink, rotateJoinCode, useParty } from "../../data/party";
+import { useInviteKey } from "../../data/partyKey";
 import { speciesLabel } from "../../data/useRecords";
 import { MobileHeader } from "../../layout/MobileShell";
 import { memberTone, useJoinQr } from "../shared/party";
 import "../shared/party.css";
 import "./mobile-screens.css";
 
-// Figma "04 Party Invite" with a real QR: it opens /join/<code> in the app.
+// Figma "04 Party Invite" with a real QR: it opens /join/<code>#k=<radio key> in the app.
 
 export async function copyText(text: string, show: (msg: string) => void, done = "Copied") {
   try {
@@ -23,7 +24,8 @@ export async function copyText(text: string, show: (msg: string) => void, done =
 export function PartyInviteScreen() {
   const user = useAuthUser();
   const { party, loading } = useParty();
-  const qr = useJoinQr(party?.joinCode);
+  const inviteKey = useInviteKey(party?.id, !!party && party.tagHolderId === user?.id);
+  const qr = useJoinQr(party?.joinCode, inviteKey);
   const { show, toast } = useToast();
 
   if (!party) return <Navigate to="/party" replace />;
@@ -53,7 +55,7 @@ export function PartyInviteScreen() {
         <div className="mi-card">
           {qr ? <img src={qr} alt={`QR code to join ${party.name}`} className="mi-qr" /> : <div className="qr-placeholder">Making QR…</div>}
           <p className="mi-code-label">JOIN CODE</p>
-          <button type="button" className="mi-code" onClick={() => void copyText(joinLink(party.joinCode), show, "Invite link copied")} aria-label={`Copy invite link for ${party.joinCode}`}>
+          <button type="button" className="mi-code" onClick={() => void copyText(joinLink(party.joinCode, inviteKey), show, "Invite link copied")} aria-label={`Copy invite link for ${party.joinCode}`}>
             {party.joinCode}
             <Icon name="m4-copy.svg" size={19} />
           </button>
