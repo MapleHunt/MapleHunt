@@ -1,6 +1,8 @@
 import { useEffect } from "react";
-import { Navigate, Route, Routes } from "react-router";
+import { Navigate, Route, Routes, useNavigate } from "react-router";
 import { useAuthUser } from "./data/auth";
+import { resumePendingJoin } from "./data/party";
+import { inviteCaptured } from "./data/partyKey";
 import { startAutoSync } from "./data/sync";
 import { useIsDesktop } from "./hooks/useMediaQuery";
 import { DesktopShell } from "./layout/DesktopShell";
@@ -29,6 +31,17 @@ export function App() {
     if (!user) return;
     return startAutoSync();
   }, [user?.id]);
+
+  // Signed in with an invite waiting (opened the QR link before signing in,
+  // or scanned it with no signal): join now and show the party.
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!user) return;
+    void inviteCaptured()
+      .then(() => resumePendingJoin())
+      .then((r) => r === "joined" && navigate("/party", { replace: true }))
+      .catch(() => undefined);
+  }, [user?.id, navigate]);
 
   if (!user) return <SignInScreen />;
 

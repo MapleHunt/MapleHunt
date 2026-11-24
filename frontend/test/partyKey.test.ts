@@ -3,6 +3,9 @@ import { db } from "../src/data/db";
 import { joinLink, joinParty } from "../src/data/party";
 import {
   adoptInviteKey,
+  captureInviteFromUrl,
+  inviteCaptured,
+  parseInvite,
   ensurePartyKey,
   getPartyKey,
   isPartyKey,
@@ -68,5 +71,41 @@ describe("scan-to-join", () => {
     // Once the server confirms the join, the key is filed under the party.
     expect(await adoptInviteKey("MH-ABC123", "party-9")).toBe(key);
     expect(await getPartyKey("party-9")).toBe(key);
+  });
+});
+
+describe("parseInvite", () => {
+  const key = newPartyKey();
+
+  it("reads the code and key from an invite QR, whatever host made it", () => {
+    expect(parseInvite(`http://localhost:5173/join/MH-ABC123#k=${key}`)).toEqual({ code: "MH-ABC123", key });
+    expect(parseInvite(`https://maplehunt.vercel.app/join/mh-abc123#k=${key}`)).toEqual({ code: "MH-ABC123", key });
+  });
+
+  it("accepts a bare join code or a link without a key", () => {
+    expect(parseInvite(" mh-abc123 ")).toEqual({ code: "MH-ABC123", key: null });
+    expect(parseInvite("https://x.example/join/MH-ABC123")).toEqual({ code: "MH-ABC123", key: null });
+  });
+
+  it("ignores QR codes that aren't party invites", () => {
+    expect(parseInvite("https://example.com/menu")).toBeNull();
+    expect(parseInvite("WIFI:S:camp;T:WPA;P:secret;;")).toBeNull();
+    expect(parseInvite("https://x.example/join/not a code")).toBeNull();
+  });
+});
+
+describe("opening an invite link before signing in", () => {
+  it("keeps the code and key, and takes the key out of the address bar", async () => {
+    const key = newPartyKey();
+    history.replaceState(null, "", `/join/MH-ZZZ999#k=${key}`);
+
+    captureInviteFromUrl();
+    expect(window.location.hash).toBe("");
+    expect(window.location.pathname).toBe("/join/MH-ZZZ999");
+
+    expect(await inviteCaptured()).toBe("MH-ZZZ999");
+    expect(await pendingJoin()).toBe("MH-ZZZ999");
+    expect(await adoptInviteKey("MH-ZZZ999", "party-5")).toBe(key);
+    history.replaceState(null, "", "/");
   });
 });

@@ -1,14 +1,17 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import QRCode from "qrcode";
 import type { Enums } from "@maplehunt/shared";
 import { Button, Field } from "../../components/ui";
 import type { AvatarTone } from "../../data/constants";
 import { createParty, joinLink, joinParty, useParty } from "../../data/party";
+import { parseInvite } from "../../data/partyKey";
+import type { Invite } from "../../data/partyKey";
 import type { PartyMember } from "../../data/party";
 import { useGeo } from "../../data/geo";
 import { SPECIES } from "../../data/useRecords";
 import { useOnlineStatus } from "../../hooks/useOnlineStatus";
+import { QrScanner } from "./QrScanner";
 import "./party.css";
 
 /** QR image (data URL) for a party's join link. */
@@ -45,6 +48,8 @@ export function PartySetup() {
   const [species, setSpecies] = useState<Enums<"species_t">>("deer");
   const [wmu, setWmu] = useState("");
   const [code, setCode] = useState("");
+  const [scanning, setScanning] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
 
   useEffect(() => {
     if (here?.wmuCode && !wmu) setWmu(here.wmuCode);
@@ -55,14 +60,34 @@ export function PartySetup() {
     void createParty({ name, species, seasonYear: new Date().getFullYear(), wmuCode: wmu.trim().toUpperCase() || null }).catch(() => undefined);
   }
 
+  // Works with no signal: the key is kept and the join is sent once there's signal.
+  const joinWith = useCallback((invite: Invite) => {
+    setScanning(false);
+    setNote(null);
+    void joinParty(invite.code, invite.key)
+      .then((r) => {
+        if (r === "queued") setNote(`Party ${invite.code} saved. You'll be added as soon as you have signal.`);
+      })
+      .catch(() => undefined);
+  }, []);
+
   function join(event: FormEvent) {
     event.preventDefault();
-    void joinParty(code).catch(() => undefined);
+    // Accepts a join code or a pasted invite link (which also carries the radio key).
+    const invite = parseInvite(code);
+    if (!invite) return setNote("Join codes look like MH-ABC123.");
+    joinWith(invite);
   }
 
   return (
     <div className="ps">
-      {!online && <p className="ps-note ps-note-warn">Creating or joining a party needs signal.</p>}
+      {scanning && <QrScanner onInvite={joinWith} onClose={() => setScanning(false)} />}
+      {!online && <p className="ps-note ps-note-warn">No signal: you can still join by scanning a QR (it's sent later). Creating a party needs signal.</p>}
+      {note && (
+        <p className="ps-note" role="status">
+          {note}
+        </p>
+      )}
       {error && (
         <p className="ps-note ps-note-warn" role="alert">
           {error}
@@ -72,11 +97,20 @@ export function PartySetup() {
       <form className="ps-card" onSubmit={join}>
         <h2 className="ps-title">Join a party</h2>
         <p className="ps-sub">Scan the tag holder's invite QR, or type the join code.</p>
+        <Button size="md" icon="m3-qr-code.svg" block onClick={() => setScanning(true)}>
+          Scan invite QR
+        </Button>
         <Field label="Join code">
-          <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="MH-XXXXXX" autoCapitalize="characters" required />
+          <input
+            value={code}
+            onChange={(e) => setCode(e.target.value.includes("/") ? e.target.value : e.target.value.toUpperCase())}
+            placeholder="MH-XXXXXX"
+            autoCapitalize="characters"
+            required
+          />
         </Field>
-        <Button type="submit" size="md" block disabled={!online || loading}>
-          Join party
+        <Button type="submit" size="md" variant="outline" block disabled={loading}>
+          Join with code
         </Button>
       </form>
 

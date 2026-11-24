@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Navigate, useParams } from "react-router";
 import { joinParty, useParty } from "../../data/party";
-import { keyFromHash } from "../../data/partyKey";
+import { inviteCaptured } from "../../data/partyKey";
 
 /**
  * Opened from the invite QR / link: /join/MH-ABC123#k=<radio key>.
@@ -18,10 +18,9 @@ export function JoinPartyScreen() {
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    const key = keyFromHash(window.location.hash);
-    // Take the key out of the address bar and browser history.
-    if (window.location.hash) history.replaceState(history.state, "", window.location.pathname);
-    joinParty(code, key)
+    // main.tsx already saved the key from the link (captureInviteFromUrl).
+    inviteCaptured()
+      .then(() => joinParty(code))
       .then(setResult)
       .catch((err: unknown) => setError(err instanceof Error ? err.message : String((err as { message?: string }).message ?? err)));
   }, [code]);

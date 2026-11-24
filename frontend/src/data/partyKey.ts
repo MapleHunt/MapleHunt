@@ -63,6 +63,54 @@ export function inviteLink(code: string, key: string | null): string {
   return key ? `${base}#k=${key}` : base;
 }
 
+export interface Invite {
+  code: string;
+  key: string | null;
+}
+
+/**
+ * Reads an invite from QR text or a pasted link (any host: a QR made on a laptop
+ * still works when scanned in the app), or from a bare join code like "MH-ABC123".
+ */
+export function parseInvite(text: string): Invite | null {
+  const t = text.trim();
+  if (/^MH-[A-Z0-9]{4,12}$/i.test(t)) return { code: normalizeCode(t), key: null };
+  try {
+    const url = new URL(t);
+    const m = url.pathname.match(/\/join\/([^/]+)\/?$/);
+    if (!m) return null;
+    const code = normalizeCode(decodeURIComponent(m[1]!));
+    if (!/^MH-[A-Z0-9]{4,12}$/.test(code)) return null;
+    return { code, key: keyFromHash(url.hash) };
+  } catch {
+    return null;
+  }
+}
+
+let captured: Promise<string | null> = Promise.resolve(null);
+
+/**
+ * Call once at start-up. If the app was opened from an invite link, keep the
+ * code and key on this phone straight away, so the join survives signing in
+ * (Google sign-in drops the #key; an email confirmation link goes to the home page).
+ * The key is also taken out of the address bar.
+ */
+export function captureInviteFromUrl(loc: Location = window.location): void {
+  const invite = parseInvite(loc.href);
+  if (!invite) return;
+  if (loc.hash) history.replaceState(history.state, "", loc.pathname + loc.search);
+  captured = (async () => {
+    if (invite.key) await saveInviteKey(invite.code, invite.key);
+    await queueJoin(invite.code);
+    return invite.code;
+  })().catch(() => null);
+}
+
+/** Resolves once an invite from the start-up URL has been saved. */
+export function inviteCaptured(): Promise<string | null> {
+  return captured;
+}
+
 export async function getPartyKey(partyId: string): Promise<string | null> {
   const k = await kvGet<string>(byParty(partyId));
   return isPartyKey(k) ? k : null;

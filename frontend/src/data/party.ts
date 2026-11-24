@@ -169,19 +169,23 @@ export async function joinParty(code: string, key?: string | null): Promise<"joi
 
 let resuming = false;
 
-/** Sends a join that was scanned with no signal. Safe to call any time. */
-export async function resumePendingJoin(): Promise<void> {
-  if (resuming || !supabase || !navigator.onLine) return;
+/**
+ * Sends a join that is waiting: scanned with no signal, or opened from an invite
+ * link before signing in. Safe to call any time. Returns "joined" when it joined.
+ */
+export async function resumePendingJoin(): Promise<"joined" | null> {
+  if (resuming || !supabase || !navigator.onLine) return null;
   const code = await pendingJoin();
-  if (!code) return;
+  if (!code) return null;
   const { data: session } = await supabase.auth.getSession();
-  if (!session.session) return;
+  if (!session.session) return null;
   resuming = true;
   try {
-    await joinParty(code);
+    return (await joinParty(code)) === "joined" ? "joined" : null;
   } catch {
     // e.g. the code was changed meanwhile: the error shows on the Party screen.
     await clearPendingJoin();
+    return null;
   } finally {
     resuming = false;
   }
