@@ -533,7 +533,10 @@ export type Database = {
           source_url: string
         }[]
       }
-      set_mesh_node: { Args: { p_node: string; p_party: string }; Returns: undefined }
+      set_mesh_node: {
+        Args: { p_node: string; p_party: string }
+        Returns: undefined
+      }
       shares_party_with: { Args: { p_profile: string }; Returns: boolean }
       sync_pull: { Args: { since?: string }; Returns: Json }
       sync_push: { Args: { payload: Json }; Returns: Json }
