@@ -6,6 +6,7 @@ import { initials, useAuthUser } from "../../data/auth";
 import { DEFAULT_CENTER, placeLine, useGeo } from "../../data/geo";
 import { endHunt, formatDuration, startHunt, useActiveHunt } from "../../data/hunt";
 import { useParty } from "../../data/party";
+import { connectionLabel, useRadio } from "../../data/radio";
 import { parsePointText } from "../../data/records";
 import { syncLabel, useSyncStatus } from "../../data/sync";
 import { speciesLabel, useHarvests, useObservations } from "../../data/useRecords";
@@ -30,7 +31,8 @@ function useNow(active: boolean) {
 
 export function MapScreen() {
   const user = useAuthUser();
-  const { position, positionError, overlay, here } = useGeo();
+  const { position, positionError, overlay, here, crossing } = useGeo();
+  const radio = useRadio();
   const { party } = useParty();
   const hunt = useActiveHunt();
   const online = useOnlineStatus();
@@ -55,6 +57,12 @@ export function MapScreen() {
       handle.current.flyTo(position, 14);
     }
   }, [position]);
+
+  useEffect(() => {
+    if (!crossing) return;
+    if (crossing.warn) setAlertDismissed(false);
+    else show(crossing.text);
+  }, [crossing, show]);
 
   const pins = useMemo<MapPin[]>(() => {
     if (!layers.records) return [];
@@ -104,7 +112,14 @@ export function MapScreen() {
   }
 
   const statusTop = 12;
-  const showAlert = !alertDismissed && (onClosed || offWmu);
+  const alertText = onClosed
+    ? `No hunting here${here?.land.area?.name ? ` — ${here.land.area.name}` : ""}. Move off this land.`
+    : offWmu
+      ? `You're in WMU ${here?.wmuCode}, outside your party's WMU ${party?.wmuCode}.`
+      : crossing?.warn
+        ? crossing.text
+        : null;
+  const showAlert = !alertDismissed && alertText !== null;
 
   return (
     <section className="ms">
@@ -141,7 +156,7 @@ export function MapScreen() {
               </>
             )}
           </span>
-          <span className="ms-radio-off">Radio not paired</span>
+          <span className={radio.connection === "connected" ? "ms-radio-on" : "ms-radio-off"}>{connectionLabel(radio.connection)}</span>
         </div>
         <p className="ms-place">{placeLine(here, position !== null)}</p>
         <div className="ms-row ms-meta">
@@ -163,11 +178,7 @@ export function MapScreen() {
         <div className="ms-alert-limit" role="alert" style={{ top: 132 }}>
           <div className="ms-alert-limit-message">
             <Icon name="m2-triangle-alert-red.svg" size={22} />
-            <p>
-              {onClosed
-                ? `No hunting here${here?.land.area?.name ? ` — ${here.land.area.name}` : ""}. Move off this land.`
-                : `You're in WMU ${here?.wmuCode}, outside your party's WMU ${party?.wmuCode}.`}
-            </p>
+            <p>{alertText}</p>
           </div>
           <div className="ms-alert-limit-actions">
             <button type="button" className="ms-alert-view" onClick={() => position && handle.current?.flyTo(position, 14)}>

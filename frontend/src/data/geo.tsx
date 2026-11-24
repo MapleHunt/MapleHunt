@@ -1,9 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { checkPosition, distanceKm } from "@maplehunt/geo";
-import type { AreaGeometry, LandArea, LandStatus, PositionCheck, WmuArea } from "@maplehunt/geo";
+import { BoundaryWatcher, checkPosition, distanceKm } from "@maplehunt/geo";
+import type { AreaGeometry, BoundaryEvent, LandArea, LandStatus, PositionCheck, WmuArea } from "@maplehunt/geo";
 import { supabase } from "../lib/supabase";
 import { kvGet, kvSet } from "./db";
+import { useParty } from "./party";
 import type { Point } from "./records";
 
 // GPS + "which WMU / what land am I on". Polygons near you are fetched once with
@@ -39,9 +40,21 @@ interface GeoState {
   overlayError: string | null;
   /** Land check for your GPS position (null until both GPS and polygons are available). */
   here: PositionCheck | null;
+  /** Latest boundary crossing (WMU or land status), confirmed over two fixes. */
+  crossing: Crossing | null;
   checkAt: (point: Point) => PositionCheck | null;
   loadOverlayAt: (point: Point) => Promise<void>;
 }
+
+export interface Crossing {
+  event: BoundaryEvent;
+  text: string;
+  warn: boolean;
+  at: number;
+}
+
+// Fixes worse than this are too rough to say which side of a line you're on.
+export const MAX_CHECK_ACCURACY_M = 100;
 
 const Ctx = createContext<GeoState | null>(null);
 
@@ -128,9 +141,25 @@ export function GeoProvider({ children }: { children: ReactNode }) {
 
   const here = useMemo(() => (position ? checkAt(position) : null), [position, checkAt]);
 
+  const { party } = useParty();
+  const partyWmu = party?.wmuCode ?? null;
+  const watcher = useRef(new BoundaryWatcher());
+  const [crossing, setCrossing] = useState<Crossing | null>(null);
+  const lastFixAt = useRef(0);
+
+  useEffect(() => {
+    if (!here || !position || position.accuracy > MAX_CHECK_ACCURACY_M || position.at === lastFixAt.current) return;
+    lastFixAt.current = position.at;
+    const crossings = watcher.current.update(here).map((event) => ({ event, ...crossingText(event, partyWmu), at: position.at }));
+    const shown = crossings.find((c) => c.warn) ?? crossings[0];
+    if (!shown) return;
+    setCrossing(shown);
+    navigator.vibrate?.(shown.warn ? [400, 150, 400] : 200);
+  }, [here, position, partyWmu]);
+
   const value = useMemo<GeoState>(
-    () => ({ position, positionError, overlay, overlayError, here, checkAt, loadOverlayAt }),
-    [position, positionError, overlay, overlayError, here, checkAt, loadOverlayAt],
+    () => ({ position, positionError, overlay, overlayError, here, crossing, checkAt, loadOverlayAt }),
+    [position, positionError, overlay, overlayError, here, crossing, checkAt, loadOverlayAt],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
@@ -153,6 +182,18 @@ export function placeLine(check: PositionCheck | null, hasPosition: boolean): st
   if (!check) return navigator.onLine ? "Loading land data…" : "No land data saved for this area";
   const wmu = check.wmuCode ? `WMU ${check.wmuCode}` : "Outside known WMUs";
   return `${wmu} · ${landText[check.land.status]}`;
+}
+
+/** Banner text for a boundary crossing. `warn` means the hunter has to act (stop or turn back). */
+export function crossingText(event: BoundaryEvent, partyWmu: string | null): { text: string; warn: boolean } {
+  if (event.type === "land_changed") {
+    if (event.to === "closed") return { text: `You entered ${event.area?.name ?? "closed land"}. No hunting here.`, warn: true };
+    if (event.from === "closed") return { text: `You left the closed area. ${landText[event.to]}.`, warn: false };
+    return { text: `Now on: ${landText[event.to]}.`, warn: false };
+  }
+  if (!event.to) return { text: `You left WMU ${event.from}. No WMU data here.`, warn: true };
+  if (partyWmu && event.to !== partyWmu) return { text: `You crossed into WMU ${event.to}, outside your party's WMU ${partyWmu}.`, warn: true };
+  return { text: `You crossed into WMU ${event.to}.`, warn: false };
 }
 
 /** Ontario fallback view when there is no GPS fix and no records yet. */

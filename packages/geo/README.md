@@ -11,6 +11,7 @@ Owner: Paviter (maps & radio)
 | `src/distance.ts` | `distanceKm(a, b)`: great-circle distance in km (Turf `distance`) |
 | `src/partyRange.ts` | `PartyRangeMonitor`: the 5 km party rule and lost-contact alert |
 | `src/landCheck.ts` | `findWmu`, `landAdvice`, `checkPosition`: which WMU and what land a GPS fix is on (Turf `booleanPointInPolygon`) |
+| `src/boundaryWatch.ts` | `BoundaryWatcher`: turns the check of every fix into `wmu_changed` / `land_changed` crossing events |
 
 ## Rules it implements (from the R&R)
 
@@ -20,6 +21,8 @@ Owner: Paviter (maps & radio)
   The next packet from them raises `contact_restored`.
 - **Land:** only Crown land is ever shown as open. Closed land says "No hunting here".
   Anything else, including land we have no data for, says **"Check access"**, never "open".
+
+- **Boundary alert (M3):** a crossing counts only after **2 fixes in a row** agree, so standing on a line doesn't flip the alert. The app skips fixes worse than ±100 m.
 
 Every phone runs its own monitor, so every member sees the alert, including the one who walked too far.
 
@@ -37,7 +40,8 @@ const events = monitor.updatePosition(nodeId, { lat, lon }, heardAt);
 const lost = monitor.tick(Date.now());
 
 // on every GPS fix: WMU chip + land banner
-const { wmuCode, land } = checkPosition({ lat, lon }, wmuAreas, landAreas);
+const check = checkPosition({ lat, lon }, wmuAreas, landAreas);
+const crossings = watcher.update(check); // watcher = new BoundaryWatcher()
 ```
 
 `WmuArea` and `LandArea` mirror `public.wmu_boundaries` and `public.land_areas`; geometry is GeoJSON in `[lon, lat]` order.
@@ -52,4 +56,4 @@ pnpm --filter @maplehunt/geo test
 
 - Load WMU 87D + Crown land from the offline map pack instead of test squares. The pack (map-packs/manifest.json in Supabase Storage) has `wmu` (wmuCode) and `land` (category, huntingStatus) layers.
 - Cross-check `checkPosition` against PostGIS (`wmu_at` / `land_at` / `check_position`, live since migration 0005) at Arshdeep's 10 test points (T24).
-- Measure `checkPosition` against the ≤ 100 ms target on a real Android phone.
+- Measure `checkPosition` on a real Android phone. `test/checkSpeed.test.ts` checks the ≤ 100 ms target on a desktop with 12 WMUs of 5000 vertices and 400 Crown parcels.

@@ -21,3 +21,4 @@ export {
   type LandStatus,
   type PositionCheck,
 } from "./landCheck";
+export { BoundaryWatcher, type BoundaryEvent, type BoundaryWatcherOptions } from "./boundaryWatch";
