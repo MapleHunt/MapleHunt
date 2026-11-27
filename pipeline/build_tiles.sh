@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 # Builds the offline map pack for WMU 87D + 10 km: pipeline/data/pack/pack.pmtiles
 # Layers: Protomaps basemap + "wmu" and "land" overlays from the database.
-# Usage: bash pipeline/build_tiles.sh [protomaps-build-date, e.g. 20261118]
+# Usage: bash pipeline/build_tiles.sh [protomaps-build-date, e.g. 20261125]
+#   No date: reuse the basemap already in pipeline/data/pack/ (only the overlays are rebuilt).
+#   With a date: download a fresh basemap. Protomaps only keeps recent daily builds,
+#   so pick a date listed at https://maps.protomaps.com/builds/
 # Needs pmtiles, tippecanoe (with tile-join), GDAL, and SUPABASE_DB_URL in .env.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-BUILD="${1:-20261118}"
+BUILD="${1:-}"
 BBOX="-80.373,43.13,-79.737,43.56"
 OUT="pipeline/data/pack"
 MAX_MB=150
@@ -15,9 +18,16 @@ DB="$(grep -E '^SUPABASE_DB_URL=' .env | cut -d= -f2- | tr -d "'\"")"
 [ -n "$DB" ] || { echo "SUPABASE_DB_URL is empty in .env"; exit 1; }
 mkdir -p "$OUT"
 
-echo "1/4 Basemap (Protomaps build $BUILD)"
-pmtiles extract "https://build.protomaps.com/$BUILD.pmtiles" "$OUT/basemap.pmtiles" \
-  --bbox="$BBOX" --maxzoom=15
+if [ -n "$BUILD" ]; then
+  echo "1/4 Basemap (Protomaps build $BUILD)"
+  pmtiles extract "https://build.protomaps.com/$BUILD.pmtiles" "$OUT/basemap.pmtiles" \
+    --bbox="$BBOX" --maxzoom=15
+elif [ -f "$OUT/basemap.pmtiles" ]; then
+  echo "1/4 Basemap: reusing $OUT/basemap.pmtiles (pass a build date to download a new one)"
+else
+  echo "No basemap yet. Run again with a Protomaps build date from https://maps.protomaps.com/builds/"
+  exit 1
+fi
 
 echo "2/4 Overlays from the database"
 BOX="extensions.ST_MakeEnvelope($BBOX,4326)"
